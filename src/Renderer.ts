@@ -4,6 +4,7 @@ import { gpu } from "./Gpu";
 import { degToRad } from "./Math";
 import Mesh from "./Mesh";
 import Pipeline from "./Pipeline";
+import Models from './Models';
 
 const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
   requestAnimationFrame((timestamp: number) => {
@@ -34,7 +35,7 @@ class Renderer {
 
   pipelines: Pipeline[] = [];
 
-  renderPassDescriptor: GPURenderPassDescriptor | null = null;
+  document = new Models();
 
   async initialize(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -55,9 +56,13 @@ class Renderer {
       alphaMode: "premultiplied",
     });
       
-    this.pipelines = [new Pipeline()]
+    this.pipelines.push(new Pipeline())
 
-    this.pipelines[0].meshes = [new Mesh()]
+    const mesh = new Mesh();
+
+    this.document.meshes.push(mesh);
+
+    this.pipelines[0].meshes.push(mesh);
 
     this.initialized = true;
   }
@@ -139,7 +144,7 @@ class Renderer {
       throw new Error('uniformBuffer is not set');
     }
 
-    this.renderPassDescriptor = {
+    const renderPassDescriptor = {
       colorAttachments: [
         {
           clearValue: { r: 0.0, g: 0.5, b: 1.0, a: 1.0 },
@@ -170,7 +175,7 @@ class Renderer {
 
     const commandEncoder = gpu.device.createCommandEncoder();
 
-    const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
+    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
     passEncoder.setBindGroup(0, bindGroups.camera.bindGroup);
 

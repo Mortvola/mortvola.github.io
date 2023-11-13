@@ -13,16 +13,6 @@ class Mesh {
 
   indexBuffer: GPUBuffer;
 
-  // uniformBuffer: GPUBuffer;
-
-  // uniformBufferSize: number;
-
-  // uniformBuffer2: GPUBuffer;
-
-  // uniformBufferSize2: number;
-
-  // bindGroup: GPUBindGroup;
-
   constructor() {
     if (!gpu.device) {
       throw new Error('device is not set')
