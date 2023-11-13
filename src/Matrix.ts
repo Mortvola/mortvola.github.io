@@ -1,3 +1,5 @@
+export const degToRad = (d: number) => d * Math.PI / 180;
+
 export const identity = (dst?: Float32Array) => {
   dst = dst || new Float32Array(16);
 

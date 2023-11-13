@@ -1,3 +1,7 @@
+import { bindGroups } from "./BindGroups";
+import { gpu } from "./Gpu";
+import { degToRad, perspective } from "./Matrix";
+import Mesh from "./Mesh";
 import Pipeline from "./Pipeline";
 
 const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
@@ -25,8 +29,6 @@ class Renderer {
 
   onLoadChange?: (percentComplete: number) => void;
 
-  device: GPUDevice | null = null;
-
   context: GPUCanvasContext | null = null;
 
   pipelines: Pipeline[] = [];
@@ -36,19 +38,7 @@ class Renderer {
   async initialize(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
 
-    if (!navigator.gpu) {
-      throw new Error('gpu not supported');
-    }
-  
-    const adapter = await navigator.gpu.requestAdapter();
-  
-    if (!adapter) {
-      throw new Error('Could not acquire adapater.');
-    }
-  
-    this.device = await adapter.requestDevice();
-  
-    if (!this.device) {
+    if (!gpu.device) {
       throw new Error('Could not acquire device');
     }
 
@@ -59,12 +49,14 @@ class Renderer {
     }
 
     this.context.configure({
-      device: this.device,
+      device: gpu.device,
       format: navigator.gpu.getPreferredCanvasFormat(),
       alphaMode: "premultiplied",
     });
       
-    this.pipelines = [new Pipeline(this.device, canvas.clientWidth, canvas.clientHeight)]
+    this.pipelines = [new Pipeline()]
+
+    this.pipelines[0].meshes = [new Mesh()]
 
     this.initialized = true;
   }
@@ -130,12 +122,20 @@ class Renderer {
   }
 
   drawScene() {
-    if (!this.device) {
+    if (!gpu.device) {
       throw new Error('device is not set')
     }
 
     if (!this.context) {
       throw new Error('context is null');
+    }
+
+    if (!this.canvas) {
+      throw new Error('canvas is not set');
+    }
+
+    if (!bindGroups.camera?.uniformBuffer) {
+      throw new Error('uniformBuffer is not set');
     }
 
     this.renderPassDescriptor = {
@@ -149,9 +149,29 @@ class Renderer {
       ],
     };
 
-    const commandEncoder = this.device.createCommandEncoder();
+    const uniformValues = new Float32Array(bindGroups.camera.uniformBuffer[0].size / Float32Array.BYTES_PER_ELEMENT);
+
+    // offsets to the various uniform values in float32 indices
+    const kMatrixOffset = 0;
+
+    let matrixValue = uniformValues.subarray(kMatrixOffset, kMatrixOffset + 16);
+
+    const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+
+    matrixValue = perspective(
+        degToRad(90), // settings.fieldOfView,
+        aspect,
+        1,      // zNear
+        2000,   // zFar
+    );
+
+    gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[0].buffer, 0, matrixValue);
+
+    const commandEncoder = gpu.device.createCommandEncoder();
 
     const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
+
+    passEncoder.setBindGroup(0, bindGroups.camera.bindGroup);
 
     this.pipelines.forEach((pipeline) => {
       pipeline.render(passEncoder);
@@ -159,7 +179,7 @@ class Renderer {
   
     passEncoder.end();
   
-    this.device.queue.submit([commandEncoder.finish()]);  
+    gpu.device.queue.submit([commandEncoder.finish()]);  
   }
 }
 

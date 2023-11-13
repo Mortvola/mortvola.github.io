@@ -1,6 +1,7 @@
 import React from 'react';
 import './App.css';
 import Renderer from './Renderer';
+import { gpu } from './Gpu';
 
 const renderer = new Renderer();
 
@@ -12,6 +13,7 @@ function App() {
 
     if (element) {
       (async () => {
+        await gpu.ready;
         await renderer.initialize(element);
         renderer.start();
       })()  
