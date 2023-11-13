@@ -1,16 +1,19 @@
 import React from 'react';
 import './App.css';
-import { initialize } from './test';
+import Renderer from './Renderer';
+
+const renderer = new Renderer();
 
 function App() {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
 
   React.useEffect(() => {
-    const element = canvasRef.current;
+        const element = canvasRef.current;
 
     if (element) {
       (async () => {
-        await initialize(element);
+        await renderer.initialize(element);
+        renderer.start();
       })()  
     }
   }, [])
