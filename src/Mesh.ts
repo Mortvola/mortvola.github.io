@@ -1,6 +1,6 @@
+import { mat4 } from 'webgpu-matrix';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
-import { translate } from "./Matrix";
 import SurfaceMesh from "./Shapes/SurfaceMesh";
 import { uvSphere } from "./Shapes/uvsphere";
 
@@ -67,7 +67,8 @@ class Mesh {
     const kMatrixOffset = 0;
 
     let matrixValue2 = uniformValues2.subarray(kMatrixOffset, kMatrixOffset + 16);
-    matrixValue2 = translate(0, 0, -2);
+    matrixValue2 = mat4.identity();
+    matrixValue2 = mat4.translate(matrixValue2, [0, 0, -2]);
 
     this.device.queue.writeBuffer(bindGroups.mesh.uniformBuffer[0].buffer, 0, matrixValue2);
 

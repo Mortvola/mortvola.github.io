@@ -1,6 +1,5 @@
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
-import { perspective, translate } from "./Matrix";
 import Mesh from "./Mesh";
 
 const shaders = `

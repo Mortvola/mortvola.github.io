@@ -1,6 +1,7 @@
+import { mat4 } from 'webgpu-matrix';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
-import { degToRad, perspective } from "./Matrix";
+import { degToRad } from "./Math";
 import Mesh from "./Mesh";
 import Pipeline from "./Pipeline";
 
@@ -158,7 +159,7 @@ class Renderer {
 
     const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
 
-    matrixValue = perspective(
+    matrixValue = mat4.perspective(
         degToRad(90), // settings.fieldOfView,
         aspect,
         1,      // zNear
