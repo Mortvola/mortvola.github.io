@@ -1,10 +1,11 @@
-import { mat4 } from 'webgpu-matrix';
+import { mat4, vec3, vec4 } from 'webgpu-matrix';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import { degToRad } from "./Math";
 import Mesh from "./Mesh";
 import Pipeline from "./Pipeline";
 import Models from './Models';
+import Point from './Shapes/Point';
 
 const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
   requestAnimationFrame((timestamp: number) => {
@@ -36,6 +37,8 @@ class Renderer {
   pipelines: Pipeline[] = [];
 
   document = new Models();
+
+  cameraPosition = vec4.create(0, 0, 0, 1);
 
   async initialize(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -186,6 +189,37 @@ class Renderer {
     passEncoder.end();
   
     gpu.device.queue.submit([commandEncoder.finish()]);  
+  }
+
+  hitTest(x: number, y: number) {
+    if (!this.canvas) {
+      throw new Error('canvas is not set');
+    }
+
+    const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+
+    const matrix = mat4.perspective(
+      degToRad(90), // settings.fieldOfView,
+      aspect,
+      1,      // zNear
+      2000,   // zFar
+    );
+
+    const inverseMatrix = mat4.inverse(matrix);
+
+    const point = vec4.create(x, y, 0, 1);
+
+    let p2 = vec4.transformMat4(point, inverseMatrix);
+    p2[2] = -1;
+    p2[3] = 0;
+
+    const origin = this.cameraPosition;
+
+    for (let mesh of this.document.meshes) {
+      if (mesh.hitTest(origin, p2)) {
+        break;
+      }
+    }
   }
 }
 

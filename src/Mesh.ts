@@ -1,8 +1,10 @@
-import { mat4 } from 'webgpu-matrix';
+import { mat4, vec3, vec4 } from 'webgpu-matrix';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import SurfaceMesh from "./Shapes/SurfaceMesh";
 import { uvSphere } from "./Shapes/uvsphere";
+import Vec4 from 'webgpu-matrix/dist/1.x/vec4-impl';
+import { intersectTriangle } from './Math';
 
 class Mesh {
   device: GPUDevice;
@@ -67,6 +69,48 @@ class Mesh {
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.setIndexBuffer(this.indexBuffer, "uint16");
     passEncoder.drawIndexed(this.sphere.indexes.length);  
+  }
+
+  hitTest(origin: Vec4, vector: Vec4) {
+    let matrix = mat4.identity();
+    matrix = mat4.translate(matrix, [0, 0, -2]);
+
+    const inverseMatrix = mat4.inverse(matrix);
+
+    const localVector = vec4.transformMat4(vector, inverseMatrix);
+    const localOrigin = vec4.transformMat4(origin, inverseMatrix);
+
+    for (let i = 0; i < this.sphere.indexes.length; i += 3) {
+      const index0 = this.sphere.indexes[i + 0] * 8;
+      const index1 = this.sphere.indexes[i + 1] * 8;
+      const index2 = this.sphere.indexes[i + 2] * 8;
+
+      const v0 = vec3.create(
+        this.sphere.vertices[index0 + 0],
+        this.sphere.vertices[index0 + 1],
+        this.sphere.vertices[index0 + 2],
+      )
+
+      const v1 = vec3.create(
+        this.sphere.vertices[index1 + 0],
+        this.sphere.vertices[index1 + 1],
+        this.sphere.vertices[index1 + 2],
+      )
+
+      const v2 = vec3.create(
+        this.sphere.vertices[index2 + 0],
+        this.sphere.vertices[index2 + 1],
+        this.sphere.vertices[index2 + 2],
+      )
+
+      const result = intersectTriangle(localOrigin, localVector, v0, v1, v2);
+
+      if (result) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }
 

@@ -20,9 +20,21 @@ function App() {
     }
   }, [])
 
+  const handleClick: React.MouseEventHandler<HTMLCanvasElement> = (event) => {
+    const element = canvasRef.current;
+
+    if (element) {
+      const rect = element.getBoundingClientRect();
+
+      const clipX = ((event.clientX - rect.left) / element.clientWidth) * 2 - 1;
+      const clipY = 1 - ((event.clientY - rect.top) / element.clientHeight) * 2;
+      renderer.hitTest(clipX, clipY);  
+    }
+  }
+
   return (
     <div className="App">
-      <canvas ref={canvasRef} width="800" height="600" />
+      <canvas ref={canvasRef} width="800" height="600" onClick={handleClick} />
     </div>
   );
 }

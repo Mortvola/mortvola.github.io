@@ -72,7 +72,9 @@ class Pipeline {
   render(passEncoder: GPURenderPassEncoder) {
     passEncoder.setPipeline(this.pipeline);
 
-    this.meshes[0].render(passEncoder);
+    this.meshes.forEach((mesh) => {
+      mesh.render(passEncoder);
+    })
   }
 }
 
