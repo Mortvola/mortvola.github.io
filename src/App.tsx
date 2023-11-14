@@ -55,12 +55,49 @@ function App() {
     }
   }
 
+  const getVh = React.useCallback(() => {
+    return Math.max(
+      document.documentElement.clientHeight || 0,
+      window.innerHeight || 0
+    );
+  }, []);
+
+  const getVw = React.useCallback(() => {
+      return Math.max(
+        document.documentElement.clientWidth || 0,
+        window.innerWidth || 0
+      );
+  }, []);
+
+  const [clientWidth, setClientWidth] = React.useState<number>(getVw());
+  const [clientHeight, setClientHeight] = React.useState<number>(getVh());
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setClientWidth(getVw());
+      setClientHeight(getVh());
+
+      const element = canvasRef.current;
+
+      if (element) {
+        renderer.resize(element.clientWidth, element.clientHeight)
+      }
+    }
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+ }, []);
+
+
   return (
     <div className="App">
       <canvas
         ref={canvasRef}
-        width="800"
-        height="600"
+        width={clientWidth}
+        height={clientHeight}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

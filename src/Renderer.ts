@@ -75,7 +75,13 @@ class Renderer {
     this.pipelines[0].meshes.push(mesh);
 
     // Initialize the view transform.
-    const aspect = canvas.clientWidth / canvas.clientHeight;
+    this.resize(canvas.clientWidth, canvas.clientHeight)
+    
+    this.start();
+  }
+
+  resize(width: number, height: number) {
+    const aspect = width / height;
 
     this.viewTransform = mat4.perspective(
         degToRad(90), // settings.fieldOfView,
@@ -83,8 +89,6 @@ class Renderer {
         1,      // zNear
         2000,   // zFar
     );
-
-    this.start();
   }
 
   draw = (timestamp: number) => {
