@@ -1,9 +1,9 @@
 import { mat4, vec3, vec4 } from 'webgpu-matrix';
+import Vec4 from 'webgpu-matrix/dist/1.x/vec4-impl';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import SurfaceMesh from "./Shapes/SurfaceMesh";
 import { uvSphere } from "./Shapes/uvsphere";
-import Vec4 from 'webgpu-matrix/dist/1.x/vec4-impl';
 import { intersectTriangle } from './Math';
 
 class Mesh {
@@ -15,6 +15,10 @@ class Mesh {
 
   indexBuffer: GPUBuffer;
 
+  transform = mat4.identity();
+
+  translation = vec4.create(0, 0, 0, 0);
+
   constructor() {
     if (!gpu.device) {
       throw new Error('device is not set')
@@ -24,6 +28,8 @@ class Mesh {
 
     this.sphere = uvSphere(8, 8);
 
+    this.translation = vec4.create(0, 0, -2, 0)
+
     this.vertexBuffer = gpu.device.createBuffer({
       size: this.sphere.vertices.length * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.VERTEX,
@@ -31,9 +37,7 @@ class Mesh {
     });  
     {
       const mapping = new Float32Array(this.vertexBuffer.getMappedRange());
-      // for (let i = 0; i < vertices.length; ++i) {
-        mapping.set(this.sphere.vertices, 0);
-      // }
+      mapping.set(this.sphere.vertices, 0);
       this.vertexBuffer.unmap();  
     }
   
@@ -49,20 +53,22 @@ class Mesh {
     }
   }
 
+  getTransform() {
+    this.transform = mat4.translate(mat4.identity(), this.translation);
+
+    return this.transform;
+  }
+
+  setTranslation(translation: Vec4) {
+    this.translation = translation;
+  }
+
   render(passEncoder: GPURenderPassEncoder) {
     if (!bindGroups.mesh) {
       throw new Error('mesh bind group not set.')
     }
 
-    const uniformValues2 = new Float32Array(bindGroups.mesh.uniformBuffer[0].size / Float32Array.BYTES_PER_ELEMENT);
-
-    const kMatrixOffset = 0;
-
-    let matrixValue2 = uniformValues2.subarray(kMatrixOffset, kMatrixOffset + 16);
-    matrixValue2 = mat4.identity();
-    matrixValue2 = mat4.translate(matrixValue2, [0, 0, -2]);
-
-    this.device.queue.writeBuffer(bindGroups.mesh.uniformBuffer[0].buffer, 0, matrixValue2);
+    this.device.queue.writeBuffer(bindGroups.mesh.uniformBuffer[0].buffer, 0, this.getTransform());
 
     passEncoder.setBindGroup(1, bindGroups.mesh.bindGroup);
 
@@ -71,14 +77,11 @@ class Mesh {
     passEncoder.drawIndexed(this.sphere.indexes.length);  
   }
 
-  hitTest(origin: Vec4, vector: Vec4) {
-    let matrix = mat4.identity();
-    matrix = mat4.translate(matrix, [0, 0, -2]);
+  hitTest(origin: Vec4, vector: Vec4): { point: Vec4, mesh: Mesh} | null {
+    const inverseTransform = mat4.inverse(this.getTransform());
 
-    const inverseMatrix = mat4.inverse(matrix);
-
-    const localVector = vec4.transformMat4(vector, inverseMatrix);
-    const localOrigin = vec4.transformMat4(origin, inverseMatrix);
+    const localVector = vec4.transformMat4(vector, inverseTransform);
+    const localOrigin = vec4.transformMat4(origin, inverseTransform);
 
     for (let i = 0; i < this.sphere.indexes.length; i += 3) {
       const index0 = this.sphere.indexes[i + 0] * 8;
@@ -106,11 +109,16 @@ class Mesh {
       const result = intersectTriangle(localOrigin, localVector, v0, v1, v2);
 
       if (result) {
-        return true;
+        let intersection = vec4.add(localOrigin, vec4.mulScalar(localVector, result[0]))
+
+        // Convert the intersection point into world coordinates.
+        intersection = vec4.transformMat4(intersection, this.getTransform());
+
+        return { point: intersection, mesh: this };
       }
     }
 
-    return false;
+    return null;
   }
 }
 

@@ -1,11 +1,11 @@
-import { mat4, vec3, vec4 } from 'webgpu-matrix';
+import { mat4, vec4 } from 'webgpu-matrix';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
-import { degToRad } from "./Math";
+import { degToRad, intersectionPlane } from "./Math";
 import Mesh from "./Mesh";
 import Pipeline from "./Pipeline";
 import Models from './Models';
-import Point from './Shapes/Point';
+import Vec4 from 'webgpu-matrix/dist/1.x/vec4-impl';
 
 const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
   requestAnimationFrame((timestamp: number) => {
@@ -40,6 +40,10 @@ class Renderer {
 
   cameraPosition = vec4.create(0, 0, 0, 1);
 
+  viewTransform = mat4.identity();
+
+  dragPoint: { point : Vec4, mesh: Mesh, translate: Vec4 } | null = null;
+
   async initialize(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
 
@@ -66,6 +70,16 @@ class Renderer {
     this.document.meshes.push(mesh);
 
     this.pipelines[0].meshes.push(mesh);
+
+    // Initialize the view transform.
+    const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+
+    this.viewTransform = mat4.perspective(
+        degToRad(90), // settings.fieldOfView,
+        aspect,
+        1,      // zNear
+        2000,   // zFar
+    );
 
     this.initialized = true;
   }
@@ -158,23 +172,7 @@ class Renderer {
       ],
     };
 
-    const uniformValues = new Float32Array(bindGroups.camera.uniformBuffer[0].size / Float32Array.BYTES_PER_ELEMENT);
-
-    // offsets to the various uniform values in float32 indices
-    const kMatrixOffset = 0;
-
-    let matrixValue = uniformValues.subarray(kMatrixOffset, kMatrixOffset + 16);
-
-    const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
-
-    matrixValue = mat4.perspective(
-        degToRad(90), // settings.fieldOfView,
-        aspect,
-        1,      // zNear
-        2000,   // zFar
-    );
-
-    gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[0].buffer, 0, matrixValue);
+    gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[0].buffer, 0, this.viewTransform);
 
     const commandEncoder = gpu.device.createCommandEncoder();
 
@@ -191,35 +189,73 @@ class Renderer {
     gpu.device.queue.submit([commandEncoder.finish()]);  
   }
 
-  hitTest(x: number, y: number) {
-    if (!this.canvas) {
-      throw new Error('canvas is not set');
-    }
+  hitTest(x: number, y: number): { point: Vec4, mesh: Mesh} | null {
+    const inverseMatrix = mat4.inverse(this.viewTransform);
 
-    const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+    let point = vec4.create(x, y, 0, 1);
 
-    const matrix = mat4.perspective(
-      degToRad(90), // settings.fieldOfView,
-      aspect,
-      1,      // zNear
-      2000,   // zFar
-    );
-
-    const inverseMatrix = mat4.inverse(matrix);
-
-    const point = vec4.create(x, y, 0, 1);
-
-    let p2 = vec4.transformMat4(point, inverseMatrix);
-    p2[2] = -1;
-    p2[3] = 0;
+    point = vec4.transformMat4(point, inverseMatrix);
+    point[2] = -1;
+    point[3] = 0;
+    point = vec4.normalize(point);
 
     const origin = this.cameraPosition;
 
     for (let mesh of this.document.meshes) {
-      if (mesh.hitTest(origin, p2)) {
-        break;
+      const intersection = mesh.hitTest(origin, point);
+      if (intersection) {
+        return intersection;
       }
     }
+
+    return null;
+  }
+
+  startDrag(x: number, y: number) {
+    const result = this.hitTest(x, y);
+
+    if (result) {
+      this.dragPoint = {
+        point: result.point,
+        mesh: result.mesh,
+        translate: result.mesh.translation,
+      }
+    }
+  }
+
+  moveDrag(x: number, y: number) {
+    if (this.dragPoint) {
+      const inverseMatrix = mat4.inverse(this.viewTransform);
+
+      let point = vec4.create(x, y, 0, 1);
+
+      point = vec4.transformMat4(point, inverseMatrix);
+      point[2] = -1;
+      point[3] = 0;
+      point = vec4.normalize(point);
+
+      let ray = vec4.subtract(point, this.cameraPosition);
+      ray[3] = 0;
+      ray = vec4.normalize(ray);
+    
+      const planeNormal = vec4.create(0, 0, 1, 0);
+
+      console.log(`ray: ${ray}, dragPoint: ${this.dragPoint.point}`);
+
+      const intersection = intersectionPlane(this.dragPoint.point, planeNormal, vec4.create(0, 0, 0, 1), ray);
+
+      const delta = vec4.subtract(intersection, this.dragPoint.point);
+
+      const newTranslation = vec4.add(this.dragPoint.translate, delta);
+
+      this.dragPoint.mesh.setTranslation(newTranslation);
+    
+      console.log(`intersection: ${delta}`);      
+    }
+  }
+
+  stopDrag(x: number, y: number) {
+    this.dragPoint = null;
   }
 }
 

@@ -13,12 +13,12 @@ class SurfaceMesh {
   }
 
   addTriangle(v0: number, v1: number, v2: number) {
-    this.indexes = this.indexes.concat([v0, v2, v1]);
+    this.indexes = this.indexes.concat([v0, v1, v2]);
   }
 
   addQuad(v0: number, v1: number, v2: number, v3: number) {
-    this.addTriangle(v0, v3, v1);
-    this.addTriangle(v1, v3, v2);
+    this.addTriangle(v0, v1, v3);
+    this.addTriangle(v1, v2, v3);
   }
 }
 

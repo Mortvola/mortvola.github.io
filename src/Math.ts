@@ -1,5 +1,6 @@
-import { vec3 } from "webgpu-matrix";
+import { vec3, vec4 } from "webgpu-matrix";
 import { Vec3 } from "webgpu-matrix/dist/1.x/vec3";
+import Vec4 from 'webgpu-matrix/dist/1.x/vec4-impl';
 
 export const degToRad = (d: number) => d * Math.PI / 180;
 
@@ -16,7 +17,7 @@ export const intersectTriangle = (
 
   const det = vec3.dot(edge1, pvec);
 
-  if (det > -epsilon && det < epsilon) {
+  if (det < epsilon) {
     return null;
   }
 
@@ -39,4 +40,20 @@ export const intersectTriangle = (
   const t = vec3.dot(edge2, qvec) * inverseDet;
 
   return [t, u, v];
+}
+
+export const intersectionPlane = (planePoint: Vec4, planeNormal: Vec4, origin: Vec4, ray: Vec4): Vec4 | null => {
+  const denom = vec4.dot(ray, planeNormal);
+
+  console.log(`denom: ${denom}`);
+  if (denom < -1e-6 || denom > 1e-6) {
+    const v = vec4.subtract(planePoint, origin);
+    const t = vec4.dot(v, planeNormal) / denom;
+
+    if (t >= 0) {
+      return vec4.add(origin, vec4.mulScalar(ray, t))
+    }
+  }
+
+  return null;
 }

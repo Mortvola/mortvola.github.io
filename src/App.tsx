@@ -20,7 +20,7 @@ function App() {
     }
   }, [])
 
-  const handleClick: React.MouseEventHandler<HTMLCanvasElement> = (event) => {
+  const handleMouseDown: React.MouseEventHandler<HTMLCanvasElement> = (event) => {
     const element = canvasRef.current;
 
     if (element) {
@@ -28,13 +28,44 @@ function App() {
 
       const clipX = ((event.clientX - rect.left) / element.clientWidth) * 2 - 1;
       const clipY = 1 - ((event.clientY - rect.top) / element.clientHeight) * 2;
-      renderer.hitTest(clipX, clipY);  
+      renderer.startDrag(clipX, clipY);  
+    }
+  }
+
+  const handleMouseMove: React.MouseEventHandler<HTMLCanvasElement> = (event) => {
+    const element = canvasRef.current;
+
+    if (element) {
+      const rect = element.getBoundingClientRect();
+
+      const clipX = ((event.clientX - rect.left) / element.clientWidth) * 2 - 1;
+      const clipY = 1 - ((event.clientY - rect.top) / element.clientHeight) * 2;
+      renderer.moveDrag(clipX, clipY);  
+    }
+  }
+
+  const handleMouseUp: React.MouseEventHandler<HTMLCanvasElement> = (event) => {
+    const element = canvasRef.current;
+
+    if (element) {
+      const rect = element.getBoundingClientRect();
+
+      const clipX = ((event.clientX - rect.left) / element.clientWidth) * 2 - 1;
+      const clipY = 1 - ((event.clientY - rect.top) / element.clientHeight) * 2;
+      renderer.stopDrag(clipX, clipY);
     }
   }
 
   return (
     <div className="App">
-      <canvas ref={canvasRef} width="800" height="600" onClick={handleClick} />
+      <canvas
+        ref={canvasRef}
+        width="800"
+        height="600"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+      />
     </div>
   );
 }
