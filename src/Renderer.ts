@@ -46,9 +46,6 @@ class Renderer {
 
   cameraQuat = quat.create(0, 1, 0, 0);
 
-  rotateX = 0;
-  rotateY = 0;
-
   clipTransform = mat4.identity();
 
   viewTransform = mat4.identity();
@@ -94,7 +91,7 @@ class Renderer {
     // Initialize the view transform.
     this.resize(canvas.clientWidth, canvas.clientHeight)
 
-    this.viewTransform = mat4.translate(mat4.identity(), this.cameraPosition);
+    this.computeViewTransform();
 
     this.start();
   }
@@ -111,9 +108,6 @@ class Renderer {
   }
 
   computeViewTransform() {
-    // let t = mat4.identity()
-    // t = mat4.rotateX(t, this.rotateX);
-    // t = mat4.rotateY(t, this.rotateY);
     const t = mat4.fromQuat(this.cameraQuat);
     this.viewTransform = mat4.translate(t, this.cameraPosition)
   }
