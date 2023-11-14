@@ -1,4 +1,4 @@
-import { mat4, vec4 } from 'webgpu-matrix';
+import { mat4, vec3, vec4 } from 'webgpu-matrix';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import { degToRad, intersectionPlane } from "./Math";
@@ -240,17 +240,13 @@ class Renderer {
     
       const planeNormal = vec4.create(0, 0, 1, 0);
 
-      console.log(`ray: ${ray}, dragPoint: ${this.dragPoint.point}`);
-
       const intersection = intersectionPlane(this.dragPoint.point, planeNormal, vec4.create(0, 0, 0, 1), ray);
 
       const delta = vec4.subtract(intersection, this.dragPoint.point);
 
       const newTranslation = vec4.add(this.dragPoint.translate, delta);
 
-      this.dragPoint.mesh.setTranslation(newTranslation);
-    
-      console.log(`intersection: ${delta}`);      
+      this.dragPoint.mesh.setTranslation(vec3.create(newTranslation[0], newTranslation[1], newTranslation[2]));
     }
   }
 

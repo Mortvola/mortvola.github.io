@@ -20,10 +20,11 @@ function App() {
     }
   }, [])
 
-  const handleMouseDown: React.MouseEventHandler<HTMLCanvasElement> = (event) => {
+  const handlePointerDown: React.PointerEventHandler<HTMLCanvasElement> = (event) => {
     const element = canvasRef.current;
 
     if (element) {
+      element.setPointerCapture(event.pointerId);
       const rect = element.getBoundingClientRect();
 
       const clipX = ((event.clientX - rect.left) / element.clientWidth) * 2 - 1;
@@ -32,7 +33,7 @@ function App() {
     }
   }
 
-  const handleMouseMove: React.MouseEventHandler<HTMLCanvasElement> = (event) => {
+  const handlePointerMove: React.PointerEventHandler<HTMLCanvasElement> = (event) => {
     const element = canvasRef.current;
 
     if (element) {
@@ -44,10 +45,11 @@ function App() {
     }
   }
 
-  const handleMouseUp: React.MouseEventHandler<HTMLCanvasElement> = (event) => {
+  const handlePointerUp: React.PointerEventHandler<HTMLCanvasElement> = (event) => {
     const element = canvasRef.current;
 
     if (element) {
+      element.releasePointerCapture(event.pointerId);
       const rect = element.getBoundingClientRect();
 
       const clipX = ((event.clientX - rect.left) / element.clientWidth) * 2 - 1;
@@ -62,9 +64,9 @@ function App() {
         ref={canvasRef}
         width="800"
         height="600"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
       />
     </div>
   );

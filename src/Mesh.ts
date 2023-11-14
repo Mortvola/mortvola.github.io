@@ -5,6 +5,7 @@ import { gpu } from "./Gpu";
 import SurfaceMesh from "./Shapes/SurfaceMesh";
 import { uvSphere } from "./Shapes/uvsphere";
 import { intersectTriangle } from './Math';
+import { Vec3 } from 'webgpu-matrix/dist/1.x/vec3';
 
 class Mesh {
   device: GPUDevice;
@@ -17,7 +18,7 @@ class Mesh {
 
   transform = mat4.identity();
 
-  translation = vec4.create(0, 0, 0, 0);
+  translation = vec3.create(0, 0, 0);
 
   constructor() {
     if (!gpu.device) {
@@ -28,7 +29,7 @@ class Mesh {
 
     this.sphere = uvSphere(8, 8);
 
-    this.translation = vec4.create(0, 0, -2, 0)
+    this.translation = vec3.create(0, 0, -2)
 
     this.vertexBuffer = gpu.device.createBuffer({
       size: this.sphere.vertices.length * Float32Array.BYTES_PER_ELEMENT,
@@ -59,7 +60,7 @@ class Mesh {
     return this.transform;
   }
 
-  setTranslation(translation: Vec4) {
+  setTranslation(translation: Vec3) {
     this.translation = translation;
   }
 

@@ -45,7 +45,6 @@ export const intersectTriangle = (
 export const intersectionPlane = (planePoint: Vec4, planeNormal: Vec4, origin: Vec4, ray: Vec4): Vec4 | null => {
   const denom = vec4.dot(ray, planeNormal);
 
-  console.log(`denom: ${denom}`);
   if (denom < -1e-6 || denom > 1e-6) {
     const v = vec4.subtract(planePoint, origin);
     const t = vec4.dot(v, planeNormal) / denom;
