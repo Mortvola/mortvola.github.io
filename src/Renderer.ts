@@ -3,8 +3,11 @@ import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import { degToRad, intersectionPlane } from "./Math";
 import Mesh from "./Mesh";
-import Pipeline from "./Pipeline";
+import Pipeline from "./Pipelines/Pipeline";
 import Models from './Models';
+import LinePipeline from './Pipelines/LInePipeline';
+import PipelineInterface from './Pipelines/PipelineInterface';
+import CartesianAxes from './CartesianAxes';
 
 const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
   requestAnimationFrame((timestamp: number) => {
@@ -31,7 +34,7 @@ class Renderer {
 
   context: GPUCanvasContext | null = null;
 
-  pipelines: Pipeline[] = [];
+  pipelines: PipelineInterface[] = [];
 
   document = new Models();
 
@@ -79,12 +82,14 @@ class Renderer {
     this.document.meshes = [];
 
     this.pipelines.push(new Pipeline())
+    this.pipelines.push(new LinePipeline());
 
     const mesh = new Mesh();
 
     this.document.meshes.push(mesh);
 
-    this.pipelines[0].meshes.push(mesh);
+    this.pipelines[0].drawables.push(mesh);
+    this.pipelines[1].drawables.push(new CartesianAxes())
 
     // Initialize the view transform.
     this.resize(canvas.clientWidth, canvas.clientHeight)

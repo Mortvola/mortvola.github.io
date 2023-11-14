@@ -4,8 +4,9 @@ import { gpu } from "./Gpu";
 import SurfaceMesh from "./Shapes/SurfaceMesh";
 import { uvSphere } from "./Shapes/uvsphere";
 import { intersectTriangle } from './Math';
+import DrawableInterface from './Pipelines/DrawableInterface';
 
-class Mesh {
+class Mesh implements DrawableInterface {
   sphere: SurfaceMesh;
 
   vertexBuffer: GPUBuffer;
@@ -30,6 +31,7 @@ class Mesh {
       usage: GPUBufferUsage.VERTEX,
       mappedAtCreation: true,
     });  
+
     {
       const mapping = new Float32Array(this.vertexBuffer.getMappedRange());
       mapping.set(this.sphere.vertices, 0);
@@ -41,6 +43,7 @@ class Mesh {
       usage: GPUBufferUsage.INDEX,
       mappedAtCreation: true,
     })
+
     {
       const mapping = new Uint16Array(this.indexBuffer.getMappedRange());
       mapping.set(this.sphere.indexes, 0);

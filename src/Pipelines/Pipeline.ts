@@ -1,7 +1,8 @@
-import { bindGroups } from "./BindGroups";
-import { gpu } from "./Gpu";
-import Mesh from "./Mesh";
-import simpleShader from './shaders/simple.wgsl';
+import { bindGroups } from "../BindGroups";
+import { gpu } from "../Gpu";
+import Mesh from "../Mesh";
+import PipelineInterface from "./PipelineInterface";
+import simpleShader from '../shaders/simple.wgsl';
 
 const vertexBufferLayout: GPUVertexBufferLayout[] = [
   {
@@ -22,10 +23,10 @@ const vertexBufferLayout: GPUVertexBufferLayout[] = [
   },
 ];
 
-class Pipeline {
+class Pipeline implements PipelineInterface {
   pipeline: GPURenderPipeline;
 
-  meshes: Mesh[] = [];
+  drawables: Mesh[] = [];
 
   constructor() {
     if (!gpu.device) {
@@ -68,8 +69,8 @@ class Pipeline {
   render(passEncoder: GPURenderPassEncoder) {
     passEncoder.setPipeline(this.pipeline);
 
-    this.meshes.forEach((mesh) => {
-      mesh.render(passEncoder);
+    this.drawables.forEach((drawable) => {
+      drawable.render(passEncoder);
     })
   }
 }
