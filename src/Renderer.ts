@@ -16,10 +16,6 @@ const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
 };
 
 class Renderer {
-  initialized = false
-
-  canvas: HTMLCanvasElement | null = null;
-
   render = true
 
   previousTimestamp: number | null = null;
@@ -44,15 +40,19 @@ class Renderer {
 
   dragPoint: { point : Vec4, mesh: Mesh, translate: Vec4 } | null = null;
 
-  async initialize(canvas: HTMLCanvasElement) {
-    this.canvas = canvas;
+  async setCanvas(canvas: HTMLCanvasElement) {
+    await gpu.ready
 
     if (!gpu.device) {
       throw new Error('Could not acquire device');
     }
 
-    this.context = canvas.getContext("webgpu");
+    if (this.context) {
+      this.context.unconfigure();
+    }
 
+    this.context = canvas.getContext("webgpu");
+    
     if (!this.context) {
       throw new Error('context is null');
     }
@@ -63,6 +63,9 @@ class Renderer {
       alphaMode: "premultiplied",
     });
       
+    this.pipelines = [];
+    this.document.meshes = [];
+
     this.pipelines.push(new Pipeline())
 
     const mesh = new Mesh();
@@ -72,7 +75,7 @@ class Renderer {
     this.pipelines[0].meshes.push(mesh);
 
     // Initialize the view transform.
-    const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+    const aspect = canvas.clientWidth / canvas.clientHeight;
 
     this.viewTransform = mat4.perspective(
         degToRad(90), // settings.fieldOfView,
@@ -81,63 +84,66 @@ class Renderer {
         2000,   // zFar
     );
 
-    this.initialized = true;
+    this.start();
   }
 
-  start(): void {
-    const draw = (timestamp: number) => {
-      if (this.render) {
-        if (timestamp !== this.previousTimestamp) {
-          if (this.startFpsTime === null) {
-            this.startFpsTime = timestamp;
-          }
-
-          // Update the fps display every second.
-          const fpsElapsedTime = timestamp - this.startFpsTime;
-
-          if (fpsElapsedTime > 1000) {
-            const fps = this.framesRendered / (fpsElapsedTime * 0.001);
-            this.onFpsChange && this.onFpsChange(fps);
-            this.framesRendered = 0;
-            this.startFpsTime = timestamp;
-          }
-
-          // Move the camera using the set velocity.
-          if (this.previousTimestamp !== null) {
-            // const elapsedTime = (timestamp - this.previousTimestamp) * 0.001;
-
-            // this.updateTimeOfDay(elapsedTime);
-            // this.updateCameraPosition(elapsedTime);
-
-            // if (this.fadePhoto && this.photoAlpha > 0) {
-            //   if (this.fadeSTartTime === null) {
-            //     this.fadeSTartTime = timestamp;
-            //   }
-            //   else {
-            //     const eTime = (timestamp - this.fadeSTartTime) * 0.001;
-            //     this.photoAlpha = 1 - eTime / this.photoFadeDuration;
-            //     if (this.photoAlpha < 0) {
-            //       this.photoAlpha = 0;
-            //       this.fadePhoto = false;
-            //     }
-            //   }
-            // }
-          }
-
-          this.previousTimestamp = timestamp;
-
-          if (this.initialized) {
-            this.drawScene();
-          }
-
-          this.framesRendered += 1;
+  draw = (timestamp: number) => {
+    if (this.render) {
+      if (timestamp !== this.previousTimestamp) {
+        if (this.startFpsTime === null) {
+          this.startFpsTime = timestamp;
         }
 
-        requestPostAnimationFrame(draw);
-      }
-    };
+        // Update the fps display every second.
+        const fpsElapsedTime = timestamp - this.startFpsTime;
 
-    requestPostAnimationFrame(draw);
+        if (fpsElapsedTime > 1000) {
+          const fps = this.framesRendered / (fpsElapsedTime * 0.001);
+          this.onFpsChange && this.onFpsChange(fps);
+          this.framesRendered = 0;
+          this.startFpsTime = timestamp;
+        }
+
+        // Move the camera using the set velocity.
+        if (this.previousTimestamp !== null) {
+          // const elapsedTime = (timestamp - this.previousTimestamp) * 0.001;
+
+          // this.updateTimeOfDay(elapsedTime);
+          // this.updateCameraPosition(elapsedTime);
+
+          // if (this.fadePhoto && this.photoAlpha > 0) {
+          //   if (this.fadeSTartTime === null) {
+          //     this.fadeSTartTime = timestamp;
+          //   }
+          //   else {
+          //     const eTime = (timestamp - this.fadeSTartTime) * 0.001;
+          //     this.photoAlpha = 1 - eTime / this.photoFadeDuration;
+          //     if (this.photoAlpha < 0) {
+          //       this.photoAlpha = 0;
+          //       this.fadePhoto = false;
+          //     }
+          //   }
+          // }
+        }
+
+        this.previousTimestamp = timestamp;
+
+        this.drawScene();
+
+        this.framesRendered += 1;
+      }
+
+      requestPostAnimationFrame(this.draw);
+    }
+  };
+
+  started = false;
+
+  start(): void {
+    if (!this.started) {
+      this.started = true;
+      requestPostAnimationFrame(this.draw);
+    }
   }
 
   stop(): void {
@@ -151,10 +157,6 @@ class Renderer {
 
     if (!this.context) {
       throw new Error('context is null');
-    }
-
-    if (!this.canvas) {
-      throw new Error('canvas is not set');
     }
 
     if (!bindGroups.camera?.uniformBuffer) {

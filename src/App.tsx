@@ -13,9 +13,7 @@ function App() {
 
     if (element) {
       (async () => {
-        await gpu.ready;
-        await renderer.initialize(element);
-        renderer.start();
+        await renderer.setCanvas(element);
       })()  
     }
   }, [])

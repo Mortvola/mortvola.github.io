@@ -23,8 +23,6 @@ const vertexBufferLayout: GPUVertexBufferLayout[] = [
 ];
 
 class Pipeline {
-  device: GPUDevice;
-
   pipeline: GPURenderPipeline;
 
   meshes: Mesh[] = [];
@@ -33,8 +31,6 @@ class Pipeline {
     if (!gpu.device) {
       throw new Error('device is not set')
     }
-
-    this.device = gpu.device;
 
     const shaderModule = gpu.device.createShaderModule({
       code: simpleShader,

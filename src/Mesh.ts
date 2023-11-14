@@ -8,8 +8,6 @@ import { intersectTriangle } from './Math';
 import { Vec3 } from 'webgpu-matrix/dist/1.x/vec3';
 
 class Mesh {
-  device: GPUDevice;
-
   sphere: SurfaceMesh;
 
   vertexBuffer: GPUBuffer;
@@ -24,8 +22,6 @@ class Mesh {
     if (!gpu.device) {
       throw new Error('device is not set')
     }
-
-    this.device = gpu.device;
 
     this.sphere = uvSphere(8, 8);
 
@@ -69,7 +65,11 @@ class Mesh {
       throw new Error('mesh bind group not set.')
     }
 
-    this.device.queue.writeBuffer(bindGroups.mesh.uniformBuffer[0].buffer, 0, this.getTransform());
+    if (!gpu.device) {
+      throw new Error('gpu devcie not set.')
+    }
+
+    gpu.device.queue.writeBuffer(bindGroups.mesh.uniformBuffer[0].buffer, 0, this.getTransform());
 
     passEncoder.setBindGroup(1, bindGroups.mesh.bindGroup);
 
