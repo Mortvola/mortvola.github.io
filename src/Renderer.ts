@@ -35,6 +35,10 @@ class Renderer {
 
   document = new Models();
 
+  near = 0.1;
+  
+  far = 2000;
+
   cameraPosition = vec4.create(0, 0, 10, 1);
 
   cameraQuat = quat.create(0, 1, 0, 0);
@@ -96,8 +100,8 @@ class Renderer {
     this.clipTransform = mat4.perspective(
         degToRad(90), // settings.fieldOfView,
         aspect,
-        1,      // zNear
-        2000,   // zFar
+        this.near,      // zNear
+        this.far,   // zFar
     );
   }
 
@@ -202,7 +206,7 @@ class Renderer {
     const renderPassDescriptor = {
       colorAttachments: [
         {
-          clearValue: { r: 0.0, g: 0.5, b: 1.0, a: 1.0 },
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
           loadOp: "clear" as GPULoadOp,
           storeOp: "store" as GPUStoreOp,
           view: this.context.getCurrentTexture().createView(),
