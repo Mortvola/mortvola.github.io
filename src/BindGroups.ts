@@ -52,31 +52,50 @@ class BindGroups {
           visibility: GPUShaderStage.VERTEX,
           buffer: {},
         },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {},
+        },
       ]
     })
   
-    const uniformBufferSize = 16 * Float32Array.BYTES_PER_ELEMENT;
-    const uniformBuffer = gpu.device.createBuffer({
+    const matrixBufferSize = 16 * Float32Array.BYTES_PER_ELEMENT;
+
+    const perspectiveTransformBuffer = gpu.device.createBuffer({
       label: 'uniforms',
-      size: uniformBufferSize,
+      size: matrixBufferSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-  
+
+    const viewTransformBuffer = gpu.device.createBuffer({
+      label: 'uniforms',
+      size: matrixBufferSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
     const cameraBindGroup = gpu.device.createBindGroup({
       label: 'bind group for perspective matrix',
       layout: bindGroupLayout, // this.pipeline.getBindGroupLayout(0),
       entries: [
-        { binding: 0, resource: { buffer: uniformBuffer }},
+        { binding: 0, resource: { buffer: perspectiveTransformBuffer }},
+        { binding: 1, resource: { buffer: viewTransformBuffer }},
       ],
     });
 
     this.camera = {
       bindGroup: cameraBindGroup,
       layout: bindGroupLayout,
-      uniformBuffer: [{
-        buffer: uniformBuffer,
-        size: uniformBufferSize,
-      }],
+      uniformBuffer: [
+        {
+          buffer: perspectiveTransformBuffer,
+          size: matrixBufferSize,
+        },
+        {
+          buffer: viewTransformBuffer,
+          size: matrixBufferSize,
+        },
+      ],
     }
   }
 

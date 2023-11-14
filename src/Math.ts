@@ -1,6 +1,4 @@
-import { vec3, vec4 } from "webgpu-matrix";
-import { Vec3 } from "webgpu-matrix/dist/1.x/vec3";
-import Vec4 from 'webgpu-matrix/dist/1.x/vec4-impl';
+import { vec3, vec4, Vec3, Vec4 } from "wgpu-matrix";
 
 export const degToRad = (d: number) => d * Math.PI / 180;
 

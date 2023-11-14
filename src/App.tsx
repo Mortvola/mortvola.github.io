@@ -89,8 +89,20 @@ function App() {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
- }, []);
+  }, [getVh, getVw]);
 
+  const handleWheel: React.WheelEventHandler<HTMLCanvasElement> = (event) => {
+    // console.log(event.deltaX, event.deltaY)
+
+    if (event.ctrlKey) {
+      renderer.changeCameraPos(0, event.deltaY * 0.01);
+    }
+    else {
+      renderer.changeCameraRotation(event.deltaX * 0.01, event.deltaY * 0.01)
+    }
+
+    event.stopPropagation();
+  }
 
   return (
     <div className="App">
@@ -101,6 +113,7 @@ function App() {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onWheel={handleWheel}
       />
     </div>
   );

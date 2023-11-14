@@ -1,11 +1,9 @@
-import { mat4, vec3, vec4 } from 'webgpu-matrix';
-import Vec4 from 'webgpu-matrix/dist/1.x/vec4-impl';
+import { mat4, vec3, vec4, Vec3, Vec4 } from 'wgpu-matrix';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import SurfaceMesh from "./Shapes/SurfaceMesh";
 import { uvSphere } from "./Shapes/uvsphere";
 import { intersectTriangle } from './Math';
-import { Vec3 } from 'webgpu-matrix/dist/1.x/vec3';
 
 class Mesh {
   sphere: SurfaceMesh;
@@ -25,7 +23,7 @@ class Mesh {
 
     this.sphere = uvSphere(8, 8);
 
-    this.translation = vec3.create(0, 0, -2)
+    this.translation = vec3.create(0, 0, 0)
 
     this.vertexBuffer = gpu.device.createBuffer({
       size: this.sphere.vertices.length * Float32Array.BYTES_PER_ELEMENT,
@@ -69,7 +67,7 @@ class Mesh {
       throw new Error('gpu devcie not set.')
     }
 
-    gpu.device.queue.writeBuffer(bindGroups.mesh.uniformBuffer[0].buffer, 0, this.getTransform());
+    gpu.device.queue.writeBuffer(bindGroups.mesh.uniformBuffer[0].buffer, 0, this.getTransform() as Float32Array);
 
     passEncoder.setBindGroup(1, bindGroups.mesh.bindGroup);
 

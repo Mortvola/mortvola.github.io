@@ -1,11 +1,10 @@
-import { mat4, vec3, vec4 } from 'webgpu-matrix';
+import { mat4, vec3, vec4, quat, Vec4, setDefaultType } from 'wgpu-matrix';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import { degToRad, intersectionPlane } from "./Math";
 import Mesh from "./Mesh";
 import Pipeline from "./Pipeline";
 import Models from './Models';
-import Vec4 from 'webgpu-matrix/dist/1.x/vec4-impl';
 
 const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
   requestAnimationFrame((timestamp: number) => {
@@ -14,6 +13,8 @@ const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
     }, 0);
   });
 };
+
+setDefaultType(Float32Array);
 
 class Renderer {
   render = true
@@ -34,7 +35,14 @@ class Renderer {
 
   document = new Models();
 
-  cameraPosition = vec4.create(0, 0, 0, 1);
+  cameraPosition = vec4.create(0, 0, 10, 1);
+
+  cameraQuat = quat.create(0, 1, 0, 0);
+
+  rotateX = 0;
+  rotateY = 0;
+
+  clipTransform = mat4.identity();
 
   viewTransform = mat4.identity();
 
@@ -76,19 +84,43 @@ class Renderer {
 
     // Initialize the view transform.
     this.resize(canvas.clientWidth, canvas.clientHeight)
-    
+
+    this.viewTransform = mat4.translate(mat4.identity(), this.cameraPosition);
+
     this.start();
   }
 
   resize(width: number, height: number) {
     const aspect = width / height;
 
-    this.viewTransform = mat4.perspective(
+    this.clipTransform = mat4.perspective(
         degToRad(90), // settings.fieldOfView,
         aspect,
         1,      // zNear
         2000,   // zFar
     );
+  }
+
+  computeViewTransform() {
+    // let t = mat4.identity()
+    // t = mat4.rotateX(t, this.rotateX);
+    // t = mat4.rotateY(t, this.rotateY);
+    const t = mat4.fromQuat(this.cameraQuat);
+    this.viewTransform = mat4.translate(t, this.cameraPosition)
+  }
+
+  changeCameraPos(deltaX: number, deltaY: number) {
+    this.cameraPosition[0] += deltaX;
+    this.cameraPosition[2] += deltaY;
+
+    this.computeViewTransform();
+  }
+
+  changeCameraRotation(deltaX: number, deltaY: number) {
+    quat.rotateY(this.cameraQuat, deltaX, this.cameraQuat);
+    quat.rotateX(this.cameraQuat, deltaY, this.cameraQuat);
+
+    this.computeViewTransform();
   }
 
   draw = (timestamp: number) => {
@@ -163,7 +195,7 @@ class Renderer {
       throw new Error('context is null');
     }
 
-    if (!bindGroups.camera?.uniformBuffer) {
+    if (!bindGroups.camera) {
       throw new Error('uniformBuffer is not set');
     }
 
@@ -178,7 +210,8 @@ class Renderer {
       ],
     };
 
-    gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[0].buffer, 0, this.viewTransform);
+    gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[0].buffer, 0, this.clipTransform as Float32Array);
+    gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[1].buffer, 0, mat4.inverse(this.viewTransform)  as Float32Array);
 
     const commandEncoder = gpu.device.createCommandEncoder();
 
@@ -196,7 +229,7 @@ class Renderer {
   }
 
   hitTest(x: number, y: number): { point: Vec4, mesh: Mesh} | null {
-    const inverseMatrix = mat4.inverse(this.viewTransform);
+    const inverseMatrix = mat4.inverse(this.clipTransform);
 
     let point = vec4.create(x, y, 0, 1);
 
@@ -231,7 +264,7 @@ class Renderer {
 
   moveDrag(x: number, y: number) {
     if (this.dragPoint) {
-      const inverseMatrix = mat4.inverse(this.viewTransform);
+      const inverseMatrix = mat4.inverse(this.clipTransform);
 
       let point = vec4.create(x, y, 0, 1);
 
@@ -248,11 +281,13 @@ class Renderer {
 
       const intersection = intersectionPlane(this.dragPoint.point, planeNormal, vec4.create(0, 0, 0, 1), ray);
 
-      const delta = vec4.subtract(intersection, this.dragPoint.point);
+      if (intersection) {
+        const delta = vec4.subtract(intersection, this.dragPoint.point);
 
-      const newTranslation = vec4.add(this.dragPoint.translate, delta);
-
-      this.dragPoint.mesh.setTranslation(vec3.create(newTranslation[0], newTranslation[1], newTranslation[2]));
+        const newTranslation = vec4.add(this.dragPoint.translate, delta);
+  
+        this.dragPoint.mesh.setTranslation(vec3.create(newTranslation[0], newTranslation[1], newTranslation[2]));  
+      }
     }
   }
 
