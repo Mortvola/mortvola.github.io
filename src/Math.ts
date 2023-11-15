@@ -2,6 +2,15 @@ import { vec3, vec4, Vec3, Vec4 } from "wgpu-matrix";
 
 export const degToRad = (d: number) => d * Math.PI / 180;
 
+export const normalizeDegrees = (d: number) => {
+  let normalized = d % 360;
+  if (normalized < 0) {
+    normalized += 360;
+  }
+
+  return normalized;
+}
+
 // Implementation of the Möller-Trumbore algorithm
 export const intersectTriangle = (
   origin: Vec3, dir: Vec3, v0: Vec3, v1: Vec3, v2: Vec3,

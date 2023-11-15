@@ -17,6 +17,12 @@ class Mesh implements DrawableInterface {
 
   translation = vec3.create(0, 0, 0);
 
+  bindGroup: GPUBindGroup;
+
+  uniformBuffer: GPUBuffer;
+
+  uniformBufferSize: number;
+
   constructor() {
     if (!gpu.device) {
       throw new Error('device is not set')
@@ -49,6 +55,32 @@ class Mesh implements DrawableInterface {
       mapping.set(this.sphere.indexes, 0);
       this.indexBuffer.unmap();  
     }
+
+    const bindGroupLayout = gpu.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {},
+        },
+      ]
+    })
+
+    this.uniformBufferSize = 16 * Float32Array.BYTES_PER_ELEMENT;
+    this.uniformBuffer = gpu.device.createBuffer({
+      label: 'uniforms',
+      size: this.uniformBufferSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.bindGroup = gpu.device.createBindGroup({
+      label: 'bind group for model matrix',
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.uniformBuffer }},
+      ],
+    });
+
   }
 
   getTransform() {
@@ -62,17 +94,13 @@ class Mesh implements DrawableInterface {
   }
 
   render(passEncoder: GPURenderPassEncoder) {
-    if (!bindGroups.mesh) {
-      throw new Error('mesh bind group not set.')
-    }
-
     if (!gpu.device) {
       throw new Error('gpu devcie not set.')
     }
 
-    gpu.device.queue.writeBuffer(bindGroups.mesh.uniformBuffer[0].buffer, 0, this.getTransform() as Float32Array);
+    gpu.device.queue.writeBuffer(this.uniformBuffer, 0, this.getTransform() as Float32Array);
 
-    passEncoder.setBindGroup(1, bindGroups.mesh.bindGroup);
+    passEncoder.setBindGroup(1, this.bindGroup);
 
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.setIndexBuffer(this.indexBuffer, "uint16");

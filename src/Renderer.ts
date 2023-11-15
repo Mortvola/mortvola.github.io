@@ -1,7 +1,7 @@
 import { mat4, vec3, vec4, quat, Vec4, setDefaultType } from 'wgpu-matrix';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
-import { degToRad, intersectionPlane } from "./Math";
+import { degToRad, intersectionPlane, normalizeDegrees } from "./Math";
 import Mesh from "./Mesh";
 import Pipeline from "./Pipelines/Pipeline";
 import Models from './Models';
@@ -87,16 +87,18 @@ class Renderer {
     this.pipelines.push(new Pipeline())
     this.pipelines.push(new LinePipeline());
 
-    const mesh = new Mesh();
-
-    this.document.meshes.push(mesh);
-
-    this.pipelines[0].drawables.push(mesh);
     this.pipelines[1].drawables.push(new CartesianAxes())
 
     this.computeViewTransform();
 
     this.start();
+  }
+  
+  addObject() {
+    const mesh = new Mesh();
+
+    this.document.meshes.push(mesh);
+    this.pipelines[0].drawables.push(mesh);
   }
 
   computeViewTransform() {
@@ -113,13 +115,13 @@ class Renderer {
   }
 
   changeCameraRotation(deltaX: number, deltaY: number) {
-    this.rotateX = (this.rotateX + deltaY) % 360;
+    this.rotateX = normalizeDegrees(this.rotateX + deltaY);
 
     if (this.rotateX > 90 && this.rotateX < 270) {
-      this.rotateY -= deltaX;
+      this.rotateY = normalizeDegrees(this.rotateY - deltaX);
     }
     else {
-      this.rotateY += deltaX;
+      this.rotateY = normalizeDegrees(this.rotateY + deltaX);
     }
 
     this.computeViewTransform();

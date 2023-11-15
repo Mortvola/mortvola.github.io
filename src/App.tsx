@@ -1,5 +1,5 @@
 import React from 'react';
-import './App.css';
+import './App.scss';
 import Renderer from './Renderer';
 
 const renderer = new Renderer();
@@ -96,8 +96,13 @@ function App() {
     event.stopPropagation();
   }
 
+  const handleAddClick = () => {
+    renderer.addObject();
+  }
+
   return (
     <div className="App">
+      <button type="button" className="add-button" onClick={handleAddClick}>+</button>
       <canvas
         ref={canvasRef}
         width={clientWidth}

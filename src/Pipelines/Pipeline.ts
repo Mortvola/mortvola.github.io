@@ -37,8 +37,21 @@ class Pipeline implements PipelineInterface {
       code: simpleShader,
     })
     
+    const bindGroupLayout = gpu.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {},
+        },
+      ]
+    })
+
     const pipelineLayout = gpu.device.createPipelineLayout({
-      bindGroupLayouts: bindGroups.layouts(),
+      bindGroupLayouts: [
+        bindGroups.camera!.layout,
+        bindGroupLayout,
+      ]
     });
     
     const pipelineDescriptor: GPURenderPipelineDescriptor = {
