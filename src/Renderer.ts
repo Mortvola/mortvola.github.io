@@ -1,4 +1,4 @@
-import { mat4, vec3, vec4, quat, Vec4, setDefaultType } from 'wgpu-matrix';
+import { mat4, vec3, vec4, quat, Vec3, Vec4, setDefaultType } from 'wgpu-matrix';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import { degToRad, intersectionPlane, normalizeDegrees } from "./Math";
@@ -300,11 +300,30 @@ class Renderer {
 
   hitTest(x: number, y: number): { point: Vec4, mesh: Mesh} | null {
     const { ray, origin } = this.computeHitTestRay(x, y);
-
+    let best: {
+      mesh: Mesh,
+      t: number,
+      point: Vec3
+    } | null = null;
+  
     for (let mesh of this.document.meshes) {
-      const intersection = mesh.hitTest(origin, ray);
-      if (intersection) {
-        return intersection;
+      const result = mesh.hitTest(origin, ray);
+
+      if (result) {
+        if (best === null || result.t < best.t) {
+          best = {
+            mesh: result.mesh,
+            t: result.t,
+            point: result.point,
+          }
+        }
+      }
+    }
+
+    if (best) {
+      return {
+        point: best.point,
+        mesh: best.mesh,
       }
     }
 

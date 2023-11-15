@@ -106,45 +106,19 @@ class Mesh implements DrawableInterface {
     passEncoder.drawIndexed(this.mesh.indexes.length);  
   }
 
-  hitTest(origin: Vec4, vector: Vec4): { point: Vec4, mesh: Mesh} | null {
+  hitTest(origin: Vec4, vector: Vec4): { point: Vec4, t: number, mesh: Mesh} | null {
     const inverseTransform = mat4.inverse(this.getTransform());
 
     const localVector = vec4.transformMat4(vector, inverseTransform);
     const localOrigin = vec4.transformMat4(origin, inverseTransform);
 
-    for (let i = 0; i < this.mesh.indexes.length; i += 3) {
-      const index0 = this.mesh.indexes[i + 0] * 8;
-      const index1 = this.mesh.indexes[i + 1] * 8;
-      const index2 = this.mesh.indexes[i + 2] * 8;
+    const result = this.mesh.hitTest(localOrigin, localVector);
 
-      const v0 = vec3.create(
-        this.mesh.vertices[index0 + 0],
-        this.mesh.vertices[index0 + 1],
-        this.mesh.vertices[index0 + 2],
-      )
-
-      const v1 = vec3.create(
-        this.mesh.vertices[index1 + 0],
-        this.mesh.vertices[index1 + 1],
-        this.mesh.vertices[index1 + 2],
-      )
-
-      const v2 = vec3.create(
-        this.mesh.vertices[index2 + 0],
-        this.mesh.vertices[index2 + 1],
-        this.mesh.vertices[index2 + 2],
-      )
-
-      const result = intersectTriangle(localOrigin, localVector, v0, v1, v2);
-
-      if (result) {
-        let intersection = vec4.add(localOrigin, vec4.mulScalar(localVector, result[0]))
-
+    if (result) {
         // Convert the intersection point into world coordinates.
-        intersection = vec4.transformMat4(intersection, this.getTransform());
+        const point = vec4.transformMat4(result.point, this.getTransform());
 
-        return { point: intersection, mesh: this };
-      }
+        return { point, t: result.t, mesh: this };      
     }
 
     return null;
