@@ -1,5 +1,4 @@
 import { mat4, vec3, vec4, Vec3, Vec4 } from 'wgpu-matrix';
-import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import SurfaceMesh from "./Shapes/SurfaceMesh";
 import { uvSphere } from "./Shapes/uvsphere";
@@ -7,7 +6,7 @@ import { intersectTriangle } from './Math';
 import DrawableInterface from './Pipelines/DrawableInterface';
 
 class Mesh implements DrawableInterface {
-  sphere: SurfaceMesh;
+  mesh: SurfaceMesh;
 
   vertexBuffer: GPUBuffer;
 
@@ -23,36 +22,36 @@ class Mesh implements DrawableInterface {
 
   uniformBufferSize: number;
 
-  constructor() {
+  constructor(mesh: SurfaceMesh) {
     if (!gpu.device) {
       throw new Error('device is not set')
     }
 
-    this.sphere = uvSphere(8, 8);
+    this.mesh = mesh;
 
     this.translation = vec3.create(0, 0, 0)
 
     this.vertexBuffer = gpu.device.createBuffer({
-      size: this.sphere.vertices.length * Float32Array.BYTES_PER_ELEMENT,
+      size: this.mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.VERTEX,
       mappedAtCreation: true,
     });  
 
     {
       const mapping = new Float32Array(this.vertexBuffer.getMappedRange());
-      mapping.set(this.sphere.vertices, 0);
+      mapping.set(this.mesh.vertices, 0);
       this.vertexBuffer.unmap();  
     }
   
     this.indexBuffer = gpu.device.createBuffer({
-      size: (this.sphere.indexes.length * Uint16Array.BYTES_PER_ELEMENT + 3) & ~3, // Make sure it is a multiple of four
+      size: (this.mesh.indexes.length * Uint16Array.BYTES_PER_ELEMENT + 3) & ~3, // Make sure it is a multiple of four
       usage: GPUBufferUsage.INDEX,
       mappedAtCreation: true,
     })
 
     {
       const mapping = new Uint16Array(this.indexBuffer.getMappedRange());
-      mapping.set(this.sphere.indexes, 0);
+      mapping.set(this.mesh.indexes, 0);
       this.indexBuffer.unmap();  
     }
 
@@ -104,7 +103,7 @@ class Mesh implements DrawableInterface {
 
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.setIndexBuffer(this.indexBuffer, "uint16");
-    passEncoder.drawIndexed(this.sphere.indexes.length);  
+    passEncoder.drawIndexed(this.mesh.indexes.length);  
   }
 
   hitTest(origin: Vec4, vector: Vec4): { point: Vec4, mesh: Mesh} | null {
@@ -113,27 +112,27 @@ class Mesh implements DrawableInterface {
     const localVector = vec4.transformMat4(vector, inverseTransform);
     const localOrigin = vec4.transformMat4(origin, inverseTransform);
 
-    for (let i = 0; i < this.sphere.indexes.length; i += 3) {
-      const index0 = this.sphere.indexes[i + 0] * 8;
-      const index1 = this.sphere.indexes[i + 1] * 8;
-      const index2 = this.sphere.indexes[i + 2] * 8;
+    for (let i = 0; i < this.mesh.indexes.length; i += 3) {
+      const index0 = this.mesh.indexes[i + 0] * 8;
+      const index1 = this.mesh.indexes[i + 1] * 8;
+      const index2 = this.mesh.indexes[i + 2] * 8;
 
       const v0 = vec3.create(
-        this.sphere.vertices[index0 + 0],
-        this.sphere.vertices[index0 + 1],
-        this.sphere.vertices[index0 + 2],
+        this.mesh.vertices[index0 + 0],
+        this.mesh.vertices[index0 + 1],
+        this.mesh.vertices[index0 + 2],
       )
 
       const v1 = vec3.create(
-        this.sphere.vertices[index1 + 0],
-        this.sphere.vertices[index1 + 1],
-        this.sphere.vertices[index1 + 2],
+        this.mesh.vertices[index1 + 0],
+        this.mesh.vertices[index1 + 1],
+        this.mesh.vertices[index1 + 2],
       )
 
       const v2 = vec3.create(
-        this.sphere.vertices[index2 + 0],
-        this.sphere.vertices[index2 + 1],
-        this.sphere.vertices[index2 + 2],
+        this.mesh.vertices[index2 + 0],
+        this.mesh.vertices[index2 + 1],
+        this.mesh.vertices[index2 + 2],
       )
 
       const result = intersectTriangle(localOrigin, localVector, v0, v1, v2);

@@ -8,6 +8,10 @@ import Models from './Models';
 import LinePipeline from './Pipelines/LInePipeline';
 import PipelineInterface from './Pipelines/PipelineInterface';
 import CartesianAxes from './CartesianAxes';
+import { uvSphere } from './Shapes/uvsphere';
+import { box } from './Shapes/box';
+
+export type ObjectTypes = 'UVSphere' | 'Box';
 
 const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
   requestAnimationFrame((timestamp: number) => {
@@ -94,9 +98,19 @@ class Renderer {
     this.start();
   }
   
-  addObject() {
-    const mesh = new Mesh();
-
+  addObject(type: ObjectTypes) {
+    let mesh: Mesh;
+    switch (type) {
+      case 'Box':
+        mesh = new Mesh(box(8, 8));
+        break;
+      case 'UVSphere':
+        mesh = new Mesh(uvSphere(8, 8));
+        break;
+      default:
+        throw new Error('invalid type')
+    }
+    
     this.document.meshes.push(mesh);
     this.pipelines[0].drawables.push(mesh);
   }

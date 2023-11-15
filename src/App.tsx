@@ -6,6 +6,7 @@ const renderer = new Renderer();
 
 function App() {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const [showMenu, setShowMenu] = React.useState<boolean>(false);
 
   React.useEffect(() => {
         const element = canvasRef.current;
@@ -97,12 +98,28 @@ function App() {
   }
 
   const handleAddClick = () => {
-    renderer.addObject();
+    setShowMenu((prev) => !prev)
+  }
+
+  const handleAddSphereClick = () => {
+    renderer.addObject('UVSphere');
+    setShowMenu(false);
+  }
+
+  const handleAddBoxClick = () => {
+    renderer.addObject('Box');
+    setShowMenu(false);
   }
 
   return (
     <div className="App">
-      <button type="button" className="add-button" onClick={handleAddClick}>+</button>
+      <div className="add-button">
+        <button type="button" onClick={handleAddClick}>+</button>
+        <div className={`object-menu ${showMenu ? 'show' : ''}`}>
+          <div onClick={handleAddSphereClick}>UV Sphere</div>
+          <div onClick={handleAddBoxClick}>Box</div>
+        </div>
+      </div>
       <canvas
         ref={canvasRef}
         width={clientWidth}

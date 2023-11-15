@@ -72,6 +72,7 @@ class Pipeline implements PipelineInterface {
       primitive: {
         topology: "triangle-list",
         cullMode: "back",
+        frontFace: "ccw",
       },
       depthStencil: {
         depthWriteEnabled: true,
