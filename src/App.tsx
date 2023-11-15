@@ -111,6 +111,11 @@ function App() {
     setShowMenu(false);
   }
 
+  const handleAddTetrahedronClick = () => {
+    renderer.addObject('Tetrahedron');
+    setShowMenu(false);
+  }
+
   return (
     <div className="App">
       <div className="add-button">
@@ -118,6 +123,7 @@ function App() {
         <div className={`object-menu ${showMenu ? 'show' : ''}`}>
           <div onClick={handleAddSphereClick}>UV Sphere</div>
           <div onClick={handleAddBoxClick}>Box</div>
+          <div onClick={handleAddTetrahedronClick}>Tetrahedon</div>
         </div>
       </div>
       <canvas

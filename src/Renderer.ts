@@ -10,8 +10,9 @@ import PipelineInterface from './Pipelines/PipelineInterface';
 import CartesianAxes from './CartesianAxes';
 import { uvSphere } from './Shapes/uvsphere';
 import { box } from './Shapes/box';
+import { tetrahedron } from './Shapes/tetrahedron';
 
-export type ObjectTypes = 'UVSphere' | 'Box';
+export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron';
 
 const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
   requestAnimationFrame((timestamp: number) => {
@@ -106,6 +107,9 @@ class Renderer {
         break;
       case 'UVSphere':
         mesh = new Mesh(uvSphere(8, 8));
+        break;
+      case 'Tetrahedron':
+        mesh = new Mesh(tetrahedron());
         break;
       default:
         throw new Error('invalid type')
