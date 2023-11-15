@@ -38,7 +38,7 @@ class Renderer {
 
   document = new Models();
 
-  near = 0.1;
+  near = 0.125;
   
   far = 2000;
 
@@ -52,7 +52,7 @@ class Renderer {
 
   viewTransform = mat4.identity();
 
-  dragPoint: { point : Vec4, mesh: Mesh, translate: Vec4 } | null = null;
+  dragInfo: { point : Vec4, mesh: Mesh, translate: Vec4 } | null = null;
 
   depthTextureView: GPUTextureView | null = null;
 
@@ -258,20 +258,35 @@ class Renderer {
     gpu.device.queue.submit([commandEncoder.finish()]);  
   }
 
-  hitTest(x: number, y: number): { point: Vec4, mesh: Mesh} | null {
+  // Returns ray and origin in world space coordinates.
+  computeHitTestRay(x: number, y: number): { ray: Vec4, origin: Vec4 } {
     const inverseMatrix = mat4.inverse(this.clipTransform);
 
+    // Transform point from NDC to camera space.
     let point = vec4.create(x, y, 0, 1);
-
     point = vec4.transformMat4(point, inverseMatrix);
-    point[2] = -1;
-    point[3] = 0;
-    point = vec4.normalize(point);
+    point = vec4.divScalar(point, point[3])
 
-    const origin = this.cameraPosition;
+    // Transform point and camera to world space.
+    point = vec4.transformMat4(point, this.viewTransform)
+    const origin = vec4.transformMat4(vec4.create(0, 0, 0, 1), this.viewTransform);
+
+    // Compute ray from camera through point
+    let ray = vec4.subtract(point, origin);
+    ray[3] = 0;
+    ray = vec4.normalize(ray);
+
+    return ({
+      ray,
+      origin,
+    })
+  }
+
+  hitTest(x: number, y: number): { point: Vec4, mesh: Mesh} | null {
+    const { ray, origin } = this.computeHitTestRay(x, y);
 
     for (let mesh of this.document.meshes) {
-      const intersection = mesh.hitTest(origin, point);
+      const intersection = mesh.hitTest(origin, ray);
       if (intersection) {
         return intersection;
       }
@@ -280,11 +295,33 @@ class Renderer {
     return null;
   }
 
+  dragObject(x: number, y: number) {
+    if (this.dragInfo) {
+      const { ray, origin } = this.computeHitTestRay(x, y);
+
+      // Transform plane normal to world space
+      let planeNormal = vec4.create(0, 0, 1, 0);
+      planeNormal = vec4.transformMat4(planeNormal, this.viewTransform)
+
+      const intersection = intersectionPlane(this.dragInfo.point, planeNormal, origin, ray);
+
+      if (intersection) {
+        let moveVector = vec4.subtract(intersection, this.dragInfo.point);
+
+        // Transform move vector to model space
+        moveVector = vec4.transformMat4(moveVector, mat4.inverse(this.dragInfo.mesh.getTransform()))
+        const newTranslation = vec4.add(this.dragInfo.translate,  moveVector);
+
+        this.dragInfo.mesh.setTranslation(vec3.create(newTranslation[0], newTranslation[1], newTranslation[2]));  
+      }
+    }
+  }
+
   startDrag(x: number, y: number) {
     const result = this.hitTest(x, y);
 
     if (result) {
-      this.dragPoint = {
+      this.dragInfo = {
         point: result.point,
         mesh: result.mesh,
         translate: result.mesh.translation,
@@ -293,36 +330,12 @@ class Renderer {
   }
 
   moveDrag(x: number, y: number) {
-    if (this.dragPoint) {
-      const inverseMatrix = mat4.inverse(this.clipTransform);
-
-      let point = vec4.create(x, y, 0, 1);
-
-      point = vec4.transformMat4(point, inverseMatrix);
-      point[2] = -1;
-      point[3] = 0;
-      point = vec4.normalize(point);
-
-      let ray = vec4.subtract(point, this.cameraPosition);
-      ray[3] = 0;
-      ray = vec4.normalize(ray);
-    
-      const planeNormal = vec4.create(0, 0, 1, 0);
-
-      const intersection = intersectionPlane(this.dragPoint.point, planeNormal, vec4.create(0, 0, 0, 1), ray);
-
-      if (intersection) {
-        const delta = vec4.subtract(intersection, this.dragPoint.point);
-
-        const newTranslation = vec4.add(this.dragPoint.translate, delta);
-  
-        this.dragPoint.mesh.setTranslation(vec3.create(newTranslation[0], newTranslation[1], newTranslation[2]));  
-      }
-    }
+    this.dragObject(x, y);
   }
 
   stopDrag(x: number, y: number) {
-    this.dragPoint = null;
+    this.dragObject(x, y);
+    this.dragInfo = null;
   }
 }
 
