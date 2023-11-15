@@ -44,13 +44,19 @@ class Renderer {
 
   cameraPosition = vec4.create(0, 0, 10, 1);
 
-  cameraQuat = quat.create(0, 1, 0, 0);
+  rotateX = 330;
+
+  rotateY = 45;
 
   clipTransform = mat4.identity();
 
   viewTransform = mat4.identity();
 
   dragPoint: { point : Vec4, mesh: Mesh, translate: Vec4 } | null = null;
+
+  depthTextureView: GPUTextureView | null = null;
+
+  renderedDimensions: [number, number] = [0, 0];
 
   async setCanvas(canvas: HTMLCanvasElement) {
     await gpu.ready
@@ -88,27 +94,14 @@ class Renderer {
     this.pipelines[0].drawables.push(mesh);
     this.pipelines[1].drawables.push(new CartesianAxes())
 
-    // Initialize the view transform.
-    this.resize(canvas.clientWidth, canvas.clientHeight)
-
     this.computeViewTransform();
 
     this.start();
   }
 
-  resize(width: number, height: number) {
-    const aspect = width / height;
-
-    this.clipTransform = mat4.perspective(
-        degToRad(90), // settings.fieldOfView,
-        aspect,
-        this.near,      // zNear
-        this.far,   // zFar
-    );
-  }
-
   computeViewTransform() {
-    const t = mat4.fromQuat(this.cameraQuat);
+    const cameraQuat = quat.fromEuler(degToRad(this.rotateX), degToRad(this.rotateY), 0, "yxz");
+    const t = mat4.fromQuat(cameraQuat);
     this.viewTransform = mat4.translate(t, this.cameraPosition)
   }
 
@@ -120,8 +113,14 @@ class Renderer {
   }
 
   changeCameraRotation(deltaX: number, deltaY: number) {
-    quat.rotateY(this.cameraQuat, deltaX, this.cameraQuat);
-    quat.rotateX(this.cameraQuat, deltaY, this.cameraQuat);
+    this.rotateX = (this.rotateX + deltaY) % 360;
+
+    if (this.rotateX > 90 && this.rotateX < 270) {
+      this.rotateY -= deltaX;
+    }
+    else {
+      this.rotateY += deltaX;
+    }
 
     this.computeViewTransform();
   }
@@ -202,15 +201,43 @@ class Renderer {
       throw new Error('uniformBuffer is not set');
     }
 
+    if (this.context.canvas.width !== this.renderedDimensions[0]
+      || this.context.canvas.height !== this.renderedDimensions[1]
+    ) {
+        const depthTexture = gpu.device!.createTexture({
+          size: {width: this.context.canvas.width, height: this.context.canvas.height},
+          format: "depth24plus",
+          usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+        this.depthTextureView = depthTexture.createView();
+
+        const aspect = this.context.canvas.width / this.context.canvas.height;
+
+        this.clipTransform = mat4.perspective(
+            degToRad(90), // settings.fieldOfView,
+            aspect,
+            this.near,  // zNear
+            this.far,   // zFar
+        );
+    
+        this.renderedDimensions = [this.context.canvas.width, this.context.canvas.height]
+    }
+
     const renderPassDescriptor = {
       colorAttachments: [
         {
+          view: this.context.getCurrentTexture().createView(),
           clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
           loadOp: "clear" as GPULoadOp,
           storeOp: "store" as GPUStoreOp,
-          view: this.context.getCurrentTexture().createView(),
         },
       ],
+      depthStencilAttachment: {
+        view: this.depthTextureView!,
+        depthClearValue: 1.0,
+        depthLoadOp: "clear" as GPULoadOp,
+        depthStoreOp: "store" as GPUStoreOp,
+      },
     };
 
     gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[0].buffer, 0, this.clipTransform as Float32Array);

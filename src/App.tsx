@@ -76,12 +76,6 @@ function App() {
     const handleResize = () => {
       setClientWidth(getVw());
       setClientHeight(getVh());
-
-      const element = canvasRef.current;
-
-      if (element) {
-        renderer.resize(element.clientWidth, element.clientHeight)
-      }
     }
 
     window.addEventListener('resize', handleResize);
@@ -92,13 +86,11 @@ function App() {
   }, [getVh, getVw]);
 
   const handleWheel: React.WheelEventHandler<HTMLCanvasElement> = (event) => {
-    // console.log(event.deltaX, event.deltaY)
-
     if (event.ctrlKey) {
       renderer.changeCameraPos(0, event.deltaY * 0.01);
     }
     else {
-      renderer.changeCameraRotation(event.deltaX * 0.01, event.deltaY * 0.01)
+      renderer.changeCameraRotation(event.deltaX * 0.1, event.deltaY * 0.1)
     }
 
     event.stopPropagation();

@@ -60,6 +60,11 @@ class Pipeline implements PipelineInterface {
         topology: "triangle-list",
         cullMode: "back",
       },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus"
+      },
       layout: pipelineLayout,
     };
     

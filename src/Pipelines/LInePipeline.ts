@@ -76,6 +76,11 @@ class LinePipeline implements PipelineInterface {
         topology: "line-list",
         cullMode: "none",
       },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus"
+      },
       layout: pipelineLayout,
     };
     
