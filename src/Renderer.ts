@@ -2,15 +2,17 @@ import { mat4, vec3, vec4, quat, Vec3, Vec4, setDefaultType } from 'wgpu-matrix'
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import { degToRad, intersectionPlane, normalizeDegrees } from "./Math";
-import Mesh from "./Mesh";
-import Pipeline from "./Pipelines/Pipeline";
+import Mesh from "./Shapes/Mesh";
 import Models from './Models';
-import LinePipeline from './Pipelines/LInePipeline';
-import PipelineInterface from './Pipelines/PipelineInterface';
 import CartesianAxes from './CartesianAxes';
 import { uvSphere } from './Shapes/uvsphere';
 import { box } from './Shapes/box';
 import { tetrahedron } from './Shapes/tetrahedron';
+import SelectionList from './SelectionList';
+import DragHandlesPass from './DragHandlesPass';
+import RenderPass from './RenderPass';
+import DragHandle from './Shapes/DragHandle';
+import { point } from './Shapes/pont';
 
 export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron';
 
@@ -24,7 +26,23 @@ const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
 
 setDefaultType(Float32Array);
 
+type HitTestInfo = {
+  point : Vec4,
+  mesh: Mesh,
+  translate: Vec4,
+}
+
+type DragInfo = {
+  point: Vec4,
+  objects: {
+    mesh: Mesh,
+    translate: Vec4
+  }[],
+}
+
 class Renderer {
+  initialized = false;
+
   render = true
 
   previousTimestamp: number | null = null;
@@ -39,15 +57,13 @@ class Renderer {
 
   context: GPUCanvasContext | null = null;
 
-  pipelines: PipelineInterface[] = [];
-
   document = new Models();
 
   near = 0.125;
   
   far = 2000;
 
-  cameraPosition = vec4.create(0, 0, 10, 1);
+  cameraPosition = vec4.create(0, 0, 5, 1);
 
   rotateX = 330;
 
@@ -57,11 +73,21 @@ class Renderer {
 
   viewTransform = mat4.identity();
 
-  dragInfo: { point : Vec4, mesh: Mesh, translate: Vec4 } | null = null;
+  hitTestInfo: HitTestInfo | null = null;
+
+  dragInfo: DragInfo | null = null;
 
   depthTextureView: GPUTextureView | null = null;
 
   renderedDimensions: [number, number] = [0, 0];
+
+  selected = new SelectionList();
+
+  mainRenderPass = new RenderPass();
+
+  dragHandlesPass = new DragHandlesPass();
+
+  dragHandle: DragHandle | null = null;
 
   async setCanvas(canvas: HTMLCanvasElement) {
     await gpu.ready
@@ -85,18 +111,21 @@ class Renderer {
       format: navigator.gpu.getPreferredCanvasFormat(),
       alphaMode: "premultiplied",
     });
-      
-    this.pipelines = [];
-    this.document.meshes = [];
+    
+    if (!this.initialized) {
+      this.mainRenderPass.addDrawable(new CartesianAxes(), 'line');
 
-    this.pipelines.push(new Pipeline())
-    this.pipelines.push(new LinePipeline());
+      this.dragHandle = new DragHandle(point(0.05));
+      this.dragHandlesPass.addDrawable(this.dragHandle, 'billboard')
 
-    this.pipelines[1].drawables.push(new CartesianAxes())
+      this.document.meshes = [];
+    }
 
     this.computeViewTransform();
 
     this.start();
+
+    this.initialized = true;
   }
   
   addObject(type: ObjectTypes) {
@@ -115,8 +144,10 @@ class Renderer {
         throw new Error('invalid type')
     }
     
+    mesh.translate = vec3.create(-5, 0, 0);
     this.document.meshes.push(mesh);
-    this.pipelines[0].drawables.push(mesh);
+
+    this.mainRenderPass.addDrawable(mesh, 'pipeline');
   }
 
   computeViewTransform() {
@@ -243,43 +274,32 @@ class Renderer {
         this.renderedDimensions = [this.context.canvas.width, this.context.canvas.height]
     }
 
-    const renderPassDescriptor = {
-      colorAttachments: [
-        {
-          view: this.context.getCurrentTexture().createView(),
-          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-          loadOp: "clear" as GPULoadOp,
-          storeOp: "store" as GPUStoreOp,
-        },
-      ],
-      depthStencilAttachment: {
-        view: this.depthTextureView!,
-        depthClearValue: 1.0,
-        depthLoadOp: "clear" as GPULoadOp,
-        depthStoreOp: "store" as GPUStoreOp,
-      },
-    };
+    const view = this.context.getCurrentTexture().createView();
 
     gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[0].buffer, 0, this.clipTransform as Float32Array);
     gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[1].buffer, 0, mat4.inverse(this.viewTransform)  as Float32Array);
 
     const commandEncoder = gpu.device.createCommandEncoder();
 
-    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+    this.mainRenderPass.render(view, this.depthTextureView!, commandEncoder)
 
-    passEncoder.setBindGroup(0, bindGroups.camera.bindGroup);
+    if (this.selected.selection.length > 0) {
+      // Trnslate the drag handle to the centroid of the selectd items.
+      this.dragHandle!.translate = this.selected.getCentroid();
 
-    this.pipelines.forEach((pipeline) => {
-      pipeline.render(passEncoder);
-    })
-  
-    passEncoder.end();
+      // Compute scaling so that the drag handle remains the same size no matter
+      // how far away it is.
+      // const transform = mat4.multiply(mat4.inverse(this.viewTransform), this.dragHandle!.getTransform())
+      // const scale = Math.abs(transform[14]); // This is the amount the point is translated from the camera space origin
+      // this.dragHandle!.scale = vec3.create(scale, scale, scale);
+
+      this.dragHandlesPass.render(view, null, commandEncoder);
+    }
   
     gpu.device.queue.submit([commandEncoder.finish()]);  
   }
 
-  // Returns ray and origin in world space coordinates.
-  computeHitTestRay(x: number, y: number): { ray: Vec4, origin: Vec4 } {
+  ndcToCameraSpace(x: number, y: number) {
     const inverseMatrix = mat4.inverse(this.clipTransform);
 
     // Transform point from NDC to camera space.
@@ -287,6 +307,13 @@ class Renderer {
     point = vec4.transformMat4(point, inverseMatrix);
     point = vec4.divScalar(point, point[3])
 
+    return point;
+  }
+
+  // Returns ray and origin in world space coordinates.
+  computeHitTestRay(x: number, y: number): { ray: Vec4, origin: Vec4 } {
+    let point = this.ndcToCameraSpace(x, y);
+  
     // Transform point and camera to world space.
     point = vec4.transformMat4(point, this.viewTransform)
     const origin = vec4.transformMat4(vec4.create(0, 0, 0, 1), this.viewTransform);
@@ -303,6 +330,28 @@ class Renderer {
   }
 
   hitTest(x: number, y: number): { point: Vec4, mesh: Mesh} | null {
+    if (this.selected.selection.length > 0) {
+      // Check for hit test of drag handle in screen space
+      const p = this.ndcToCameraSpace(x, y);
+      p[3] = 0; // Convert p to a vector
+
+      const point = this.dragHandle?.hitTest2(p, this.viewTransform);
+
+      if (point) {
+        console.log('hit drag handle')
+        this.dragInfo = {
+          point,
+          objects: this.selected.selection.map((object) => ({
+            mesh: object.mesh,
+            translate: object.mesh.translate,
+          }))
+        }
+
+        return null;
+      }
+    }
+
+    // Check for hits against the other objects
     const { ray, origin } = this.computeHitTestRay(x, y);
     let best: {
       mesh: Mesh,
@@ -344,37 +393,63 @@ class Renderer {
 
       const intersection = intersectionPlane(this.dragInfo.point, planeNormal, origin, ray);
 
+      console.log(`intersection: ${intersection}`)
+
       if (intersection) {
         let moveVector = vec4.subtract(intersection, this.dragInfo.point);
 
-        // Transform move vector to model space
-        moveVector = vec4.transformMat4(moveVector, mat4.inverse(this.dragInfo.mesh.getTransform()))
-        const newTranslation = vec4.add(this.dragInfo.translate,  moveVector);
+        this.dragInfo.objects.forEach((object) => {
+          console.log('dragging object')
+          // Transform move vector from world to model space
+          moveVector = vec4.transformMat4(moveVector, mat4.inverse(object.mesh.getTransform()))
 
-        this.dragInfo.mesh.setTranslation(vec3.create(newTranslation[0], newTranslation[1], newTranslation[2]));  
+          // Add the move vector to the original translation for the object.
+          const newTranslation = vec4.add(object.translate, moveVector);
+          object.mesh.setTranslation(vec3.create(newTranslation[0], newTranslation[1], newTranslation[2]));  
+        })
       }
     }
   }
 
-  startDrag(x: number, y: number) {
+  pointerDown(x: number, y: number) {
     const result = this.hitTest(x, y);
 
     if (result) {
-      this.dragInfo = {
+      this.hitTestInfo = {
         point: result.point,
         mesh: result.mesh,
-        translate: result.mesh.translation,
+        translate: result.mesh.translate,
       }
     }
   }
 
-  moveDrag(x: number, y: number) {
-    this.dragObject(x, y);
+  pointerMove(x: number, y: number) {
+    if (this.dragInfo) {
+      this.dragObject(x, y);
+    }
   }
 
-  stopDrag(x: number, y: number) {
-    this.dragObject(x, y);
-    this.dragInfo = null;
+  pointerUp(x: number, y: number) {
+    if (this.dragInfo) {
+      this.dragObject(x, y);
+      this.dragInfo = null;
+    }
+    else if (this.hitTestInfo) {
+      // Use the hit test again to see if the pointer
+      // is still over the previously hit object. If it is,
+      // then add the object to the selected list.
+      const result = this.hitTest(x, y);
+
+      if (result && result.mesh === this.hitTestInfo.mesh) {
+        this.selected.clear();
+        this.selected.addItem(result.mesh)
+      }
+    }
+    else {
+      this.selected.clear()
+    }
+
+    this.hitTestInfo = null;
   }
 }
 

@@ -1,4 +1,4 @@
-import { vec3, vec4, Vec3 } from 'wgpu-matrix';
+import { vec3, vec4, Vec3, Vec4 } from 'wgpu-matrix';
 import Point from "./Point";
 import { intersectTriangle } from '../Math';
 
@@ -57,6 +57,20 @@ class SurfaceMesh {
     }
 
     return null;
+  }
+
+  computeCentroid(): Vec4 {
+    const sum = vec3.create(0, 0, 0);
+  
+    for (let i = 0; i < this.vertices.length; i += 8) {
+      sum[0] += this.vertices[i + 0];
+      sum[1] += this.vertices[i + 1];
+      sum[2] += this.vertices[i + 2];
+    }
+
+    const average = vec3.divScalar(sum, this.vertices.length);
+
+    return vec4.create(average[0], average[1], average[2], 1);
   }
 }
 

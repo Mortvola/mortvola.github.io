@@ -1,9 +1,10 @@
+import { bindGroups } from "../BindGroups";
 import { gpu } from "../Gpu";
 import PipelineInterface from "./PipelineInterface";
-import lineShader from '../shaders/line.wgsl';
+import simpleShader from '../shaders/billboard.wgsl';
 import DrawableInterface from "./DrawableInterface";
 
-class LinePipeline implements PipelineInterface {
+class BillboardPipeline implements PipelineInterface {
   pipeline: GPURenderPipeline;
 
   constructor() {
@@ -12,18 +13,13 @@ class LinePipeline implements PipelineInterface {
     }
 
     const shaderModule = gpu.device.createShaderModule({
-      code: lineShader,
+      code: simpleShader,
     })
-
-    const layout = gpu.device.createBindGroupLayout({
+    
+    const bindGroupLayout = gpu.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {},
-        },
-        {
-          binding: 1,
           visibility: GPUShaderStage.VERTEX,
           buffer: {},
         },
@@ -32,10 +28,11 @@ class LinePipeline implements PipelineInterface {
 
     const pipelineLayout = gpu.device.createPipelineLayout({
       bindGroupLayouts: [
-        layout,
+        bindGroups.camera!.layout,
+        bindGroupLayout,
       ]
     });
-
+    
     const vertexBufferLayout: GPUVertexBufferLayout[] = [
       {
         attributes: [
@@ -53,7 +50,7 @@ class LinePipeline implements PipelineInterface {
         arrayStride: 32,
         stepMode: "vertex",
       },
-    ];    
+    ];
     
     const pipelineDescriptor: GPURenderPipelineDescriptor = {
       vertex: {
@@ -71,13 +68,9 @@ class LinePipeline implements PipelineInterface {
         ],
       },
       primitive: {
-        topology: "line-list",
-        cullMode: "none",
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: "less",
-        format: "depth24plus"
+        topology: "triangle-list",
+        cullMode: "back",
+        frontFace: "ccw",
       },
       layout: pipelineLayout,
     };
@@ -94,4 +87,4 @@ class LinePipeline implements PipelineInterface {
   }
 }
 
-export default LinePipeline;
+export default BillboardPipeline;

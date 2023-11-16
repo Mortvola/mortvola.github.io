@@ -1,4 +1,4 @@
-import Mesh from "./Mesh";
+import Mesh from "./Shapes/Mesh";
 
 class Models {
   meshes: Mesh[] = []

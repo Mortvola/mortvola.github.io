@@ -18,10 +18,13 @@ fn vertex_main(vert: Vertex) -> VertexOut
 {
   var output : VertexOut;
 
-  output.position = perspective * view * model * vert.position;
-  // output.position.x *= output.position.w;
-  // output.position.y *= output.position.w;
+  // The fourth vector in the resulting matrix will be how
+  // much a point at the origin will have been translated.
+  var pos = (view * model)[3];
 
+  // position.x/y holds the radius of the point express as a percentage of the height of the screen.
+  // Scale radius (x or y) by z so that it is always the same size no matter the distance.
+  output.position = perspective * vec4(pos.x + vert.position.x * pos.z, pos.y + vert.position.y * pos.z, pos.z, pos.w);
   output.color = vert.color;
   return output;
 }

@@ -27,7 +27,7 @@ function App() {
 
       const clipX = ((event.clientX - rect.left) / element.clientWidth) * 2 - 1;
       const clipY = 1 - ((event.clientY - rect.top) / element.clientHeight) * 2;
-      renderer.startDrag(clipX, clipY);  
+      renderer.pointerDown(clipX, clipY);  
     }
   }
 
@@ -39,7 +39,7 @@ function App() {
 
       const clipX = ((event.clientX - rect.left) / element.clientWidth) * 2 - 1;
       const clipY = 1 - ((event.clientY - rect.top) / element.clientHeight) * 2;
-      renderer.moveDrag(clipX, clipY);  
+      renderer.pointerMove(clipX, clipY);  
     }
   }
 
@@ -52,7 +52,7 @@ function App() {
 
       const clipX = ((event.clientX - rect.left) / element.clientWidth) * 2 - 1;
       const clipY = 1 - ((event.clientY - rect.top) / element.clientHeight) * 2;
-      renderer.stopDrag(clipX, clipY);
+      renderer.pointerUp(clipX, clipY);
     }
   }
 

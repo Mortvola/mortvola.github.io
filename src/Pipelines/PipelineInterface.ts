@@ -1,9 +1,9 @@
 import DrawableInterface from "./DrawableInterface";
 
 interface PipelineInterface {
-  drawables: DrawableInterface[];
+  // drawables: DrawableInterface[];
 
-  render(passEncoder: GPURenderPassEncoder): void;
+  render(passEncoder: GPURenderPassEncoder, drawables: DrawableInterface[]): void;
 }
 
 export default PipelineInterface;

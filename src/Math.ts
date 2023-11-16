@@ -63,3 +63,17 @@ export const intersectionPlane = (planePoint: Vec4, planeNormal: Vec4, origin: V
 
   return null;
 }
+
+// This is based on formulas for computing area of a parallelogram.
+// ||ba x ca|| = base * height
+// ||ba x ca|| = ||ca|| * height
+// height = ||ba x ca|| / ||ca||
+// If ca is a unit vector then height = ||ba x ca||
+// ray is assumed to be a unit vector
+export const pointRayDistance = (origin: Vec4, ray: Vec4, point: Vec4) => {
+  // Compute vector from origin to point
+  let ba = vec3.subtract(point, origin);
+  
+  // ray is ca in forumla above
+  return vec3.length(vec3.cross(ba, ray));
+}

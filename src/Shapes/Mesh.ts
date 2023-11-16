@@ -1,9 +1,7 @@
 import { mat4, vec3, vec4, Vec3, Vec4 } from 'wgpu-matrix';
-import { gpu } from "./Gpu";
-import SurfaceMesh from "./Shapes/SurfaceMesh";
-import { uvSphere } from "./Shapes/uvsphere";
-import { intersectTriangle } from './Math';
-import DrawableInterface from './Pipelines/DrawableInterface';
+import { gpu } from "../Gpu";
+import SurfaceMesh from "./SurfaceMesh";
+import DrawableInterface from '../Pipelines/DrawableInterface';
 
 class Mesh implements DrawableInterface {
   mesh: SurfaceMesh;
@@ -14,7 +12,11 @@ class Mesh implements DrawableInterface {
 
   transform = mat4.identity();
 
-  translation = vec3.create(0, 0, 0);
+  translate = vec3.create(0, 0, 0);
+
+  rotate = vec3.create(0, 0, 0);
+
+  scale = vec3.create(1, 1, 1);
 
   bindGroup: GPUBindGroup;
 
@@ -28,8 +30,6 @@ class Mesh implements DrawableInterface {
     }
 
     this.mesh = mesh;
-
-    this.translation = vec3.create(0, 0, 0)
 
     this.vertexBuffer = gpu.device.createBuffer({
       size: this.mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
@@ -83,13 +83,19 @@ class Mesh implements DrawableInterface {
   }
 
   getTransform() {
-    this.transform = mat4.translate(mat4.identity(), this.translation);
+    this.transform = mat4.identity();
+
+    mat4.translate(this.transform, this.translate, this.transform);
+    mat4.rotateX(this.transform, this.rotate[0], this.transform);
+    mat4.rotateY(this.transform, this.rotate[1], this.transform);
+    mat4.rotateZ(this.transform, this.rotate[2], this.transform);
+    mat4.scale(this.transform, this.scale, this.transform);
 
     return this.transform;
   }
 
-  setTranslation(translation: Vec3) {
-    this.translation = translation;
+  setTranslation(translate: Vec3) {
+    this.translate = translate;
   }
 
   render(passEncoder: GPURenderPassEncoder) {
@@ -122,6 +128,10 @@ class Mesh implements DrawableInterface {
     }
 
     return null;
+  }
+
+  computeCentroid(): Vec4 {
+    return this.mesh.computeCentroid()
   }
 }
 
