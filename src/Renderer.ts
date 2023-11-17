@@ -285,7 +285,7 @@ class Renderer {
 
     if (this.selected.selection.length > 0) {
       // Trnslate the drag handle to the centroid of the selectd items.
-      this.dragHandle!.translate = this.selected.getCentroid();
+      this.dragHandle!.mesh.translate = this.selected.getCentroid();
 
       // Compute scaling so that the drag handle remains the same size no matter
       // how far away it is.
@@ -335,7 +335,7 @@ class Renderer {
       const p = this.ndcToCameraSpace(x, y);
       p[3] = 0; // Convert p to a vector
 
-      const point = this.dragHandle?.hitTest2(p, this.viewTransform);
+      const point = this.dragHandle?.hitTest(p, this.viewTransform);
 
       if (point) {
         console.log('hit drag handle')
