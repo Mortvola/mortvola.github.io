@@ -1,9 +1,9 @@
 import { bindGroups } from "../BindGroups";
 import { gpu } from "../Gpu";
-import Mesh from "../Shapes/Mesh";
+import Mesh from "../Drawables/Mesh";
 import PipelineInterface from "./PipelineInterface";
 import simpleShader from '../shaders/simple.wgsl';
-import DrawableInterface from "./DrawableInterface";
+import DrawableInterface from "../Drawables/DrawableInterface";
 
 class Pipeline implements PipelineInterface {
   pipeline: GPURenderPipeline;

@@ -1,7 +1,7 @@
 import { gpu } from "../Gpu";
 import PipelineInterface from "./PipelineInterface";
 import lineShader from '../shaders/line.wgsl';
-import DrawableInterface from "./DrawableInterface";
+import DrawableInterface from "../Drawables/DrawableInterface";
 
 class LinePipeline implements PipelineInterface {
   pipeline: GPURenderPipeline;

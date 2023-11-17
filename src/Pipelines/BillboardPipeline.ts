@@ -2,7 +2,7 @@ import { bindGroups } from "../BindGroups";
 import { gpu } from "../Gpu";
 import PipelineInterface from "./PipelineInterface";
 import simpleShader from '../shaders/billboard.wgsl';
-import DrawableInterface from "./DrawableInterface";
+import DrawableInterface from "../Drawables/DrawableInterface";
 
 class BillboardPipeline implements PipelineInterface {
   pipeline: GPURenderPipeline;

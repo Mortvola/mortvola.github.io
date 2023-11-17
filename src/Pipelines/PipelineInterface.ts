@@ -1,4 +1,4 @@
-import DrawableInterface from "./DrawableInterface";
+import DrawableInterface from "../Drawables/DrawableInterface";
 
 interface PipelineInterface {
   // drawables: DrawableInterface[];

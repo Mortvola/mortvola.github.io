@@ -2,17 +2,17 @@ import { mat4, vec3, vec4, quat, Vec3, Vec4, setDefaultType } from 'wgpu-matrix'
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import { degToRad, intersectionPlane, normalizeDegrees } from "./Math";
-import Mesh from "./Shapes/Mesh";
+import Mesh from "./Drawables/Mesh";
 import Models from './Models';
 import CartesianAxes from './CartesianAxes';
-import { uvSphere } from './Shapes/uvsphere';
-import { box } from './Shapes/box';
-import { tetrahedron } from './Shapes/tetrahedron';
+import { uvSphere } from './Drawables/uvsphere';
+import { box } from './Drawables/box';
+import { tetrahedron } from './Drawables/tetrahedron';
 import SelectionList from './SelectionList';
 import DragHandlesPass from './DragHandlesPass';
 import RenderPass from './RenderPass';
-import DragHandle from './Shapes/DragHandle';
-import { point } from './Shapes/pont';
+import DragHandle from './Drawables/DragHandle';
+import { point } from './Drawables/pont';
 
 export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron';
 

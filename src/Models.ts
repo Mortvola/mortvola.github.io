@@ -1,4 +1,4 @@
-import Mesh from "./Shapes/Mesh";
+import Mesh from "./Drawables/Mesh";
 
 class Models {
   meshes: Mesh[] = []

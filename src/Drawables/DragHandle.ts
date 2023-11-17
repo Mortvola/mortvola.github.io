@@ -2,7 +2,7 @@ import { Vec4, vec4, Mat4, mat4, vec2 } from 'wgpu-matrix';
 import Mesh from "./Mesh";
 import { intersectionPlane } from '../Math';
 import { point } from './pont';
-import DrawableInterface from '../Pipelines/DrawableInterface';
+import DrawableInterface from './DrawableInterface';
 
 class DragHandle implements DrawableInterface {
   radius: number;

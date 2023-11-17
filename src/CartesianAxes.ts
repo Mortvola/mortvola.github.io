@@ -1,5 +1,5 @@
 import { gpu } from "./Gpu";
-import DrawableInterface from "./Pipelines/DrawableInterface";
+import DrawableInterface from "./Drawables/DrawableInterface";
 
 class CartesianAxes implements DrawableInterface {
   vertexBuffer: GPUBuffer;

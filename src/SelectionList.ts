@@ -1,5 +1,5 @@
 import { vec4, Vec4 } from 'wgpu-matrix';
-import Mesh from "./Shapes/Mesh";
+import Mesh from "./Drawables/Mesh";
 
 type SelectedItem = {
   mesh: Mesh,
