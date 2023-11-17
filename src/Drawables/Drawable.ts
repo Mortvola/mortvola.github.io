@@ -22,10 +22,6 @@ class Drawable implements DrawableInterface {
     return this.transform;
   }
 
-  setTranslation(translate: Vec3) {
-    this.translate = translate;
-  }
-
   render(passEncoder: GPURenderPassEncoder): void {
     throw new Error('render not implemented')
   }

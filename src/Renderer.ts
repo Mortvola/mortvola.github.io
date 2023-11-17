@@ -338,7 +338,6 @@ class Renderer {
       const point = this.dragHandle?.hitTest(p, this.viewTransform);
 
       if (point) {
-        console.log('hit drag handle')
         this.dragInfo = {
           point,
           objects: this.selected.selection.map((object) => ({
@@ -393,19 +392,16 @@ class Renderer {
 
       const intersection = intersectionPlane(this.dragInfo.point, planeNormal, origin, ray);
 
-      console.log(`intersection: ${intersection}`)
-
       if (intersection) {
         let moveVector = vec4.subtract(intersection, this.dragInfo.point);
 
         this.dragInfo.objects.forEach((object) => {
-          console.log('dragging object')
           // Transform move vector from world to model space
           moveVector = vec4.transformMat4(moveVector, mat4.inverse(object.mesh.getTransform()))
 
           // Add the move vector to the original translation for the object.
           const newTranslation = vec4.add(object.translate, moveVector);
-          object.mesh.setTranslation(vec3.create(newTranslation[0], newTranslation[1], newTranslation[2]));  
+          object.mesh.translate = vec3.create(newTranslation[0], newTranslation[1], newTranslation[2]);  
         })
       }
     }

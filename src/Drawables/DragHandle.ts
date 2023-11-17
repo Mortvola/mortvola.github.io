@@ -21,7 +21,7 @@ class DragHandle extends Drawable {
     this.mesh.translate = this.translate;
     this.mesh.rotate = this.rotate;
     this.mesh.scale = this.scale;
-    
+
     this.mesh.render(passEncoder);
   }
 
@@ -41,8 +41,6 @@ class DragHandle extends Drawable {
       const d = vec2.distance(point, p2)
 
       if (d < Math.abs(this.radius * t[14])) {
-        console.log('hit!')
-
         if (p2[3] !== 1) {
           console.log(`p2: ${p2[3]}`)
         }
