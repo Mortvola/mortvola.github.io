@@ -285,7 +285,7 @@ class Renderer {
 
     if (this.selected.selection.length > 0) {
       // Trnslate the drag handle to the centroid of the selectd items.
-      this.dragHandle!.mesh.translate = this.selected.getCentroid();
+      this.dragHandle!.translate = this.selected.getCentroid();
 
       // Compute scaling so that the drag handle remains the same size no matter
       // how far away it is.

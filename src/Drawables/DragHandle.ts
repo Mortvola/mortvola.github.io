@@ -2,26 +2,32 @@ import { Vec4, vec4, Mat4, mat4, vec2 } from 'wgpu-matrix';
 import Mesh from "./Mesh";
 import { intersectionPlane } from '../Math';
 import { point } from './pont';
-import DrawableInterface from './DrawableInterface';
+import Drawable from './Drawable';
 
-class DragHandle implements DrawableInterface {
+class DragHandle extends Drawable {
   radius: number;
 
-  mesh: Mesh
+  private mesh: Mesh
 
   constructor(radius: number) {
+    super()
+
     this.mesh = new Mesh(point(radius))
 
     this.radius = radius;
   }
 
   render(passEncoder: GPURenderPassEncoder): void {
+    this.mesh.translate = this.translate;
+    this.mesh.rotate = this.rotate;
+    this.mesh.scale = this.scale;
+    
     this.mesh.render(passEncoder);
   }
 
   hitTest(p: Vec4, viewTransform: Mat4): Vec4 | null {
     // Transform point from model space to world space to camera space.
-    let t = mat4.multiply(mat4.inverse(viewTransform), this.mesh.getTransform());
+    let t = mat4.multiply(mat4.inverse(viewTransform), this.getTransform());
 
     let point = vec4.create(t[12], t[13], t[14], t[15])
 
