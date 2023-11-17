@@ -115,7 +115,7 @@ class Renderer {
     if (!this.initialized) {
       this.mainRenderPass.addDrawable(new CartesianAxes(), 'line');
 
-      this.dragHandle = new DragHandle(point(0.05));
+      this.dragHandle = new DragHandle(0.05);
       this.dragHandlesPass.addDrawable(this.dragHandle, 'billboard')
 
       this.document.meshes = [];

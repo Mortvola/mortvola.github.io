@@ -1,8 +1,17 @@
 import { Vec4, vec4, Mat4, mat4, vec2 } from 'wgpu-matrix';
 import Mesh from "./Mesh";
 import { intersectionPlane } from '../Math';
+import { point } from './pont';
 
 class DragHandle extends Mesh {
+  radius: number;
+
+  constructor(radius: number) {
+    super(point(radius))
+
+    this.radius = radius;
+  }
+
   hitTest2(p: Vec4, viewTransform: Mat4): Vec4 | null {
     // Transform point from model space to world space to camera space.
     let t = mat4.multiply(mat4.inverse(viewTransform), this.getTransform());
@@ -18,7 +27,7 @@ class DragHandle extends Mesh {
     if (p2) {
       const d = vec2.distance(point, p2)
 
-      if (d < Math.abs(0.05 * t[14])) {
+      if (d < Math.abs(this.radius * t[14])) {
         console.log('hit!')
 
         if (p2[3] !== 1) {
