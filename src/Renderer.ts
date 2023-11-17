@@ -113,10 +113,10 @@ class Renderer {
     });
     
     if (!this.initialized) {
-      this.mainRenderPass.addDrawable(new CartesianAxes(), 'line');
+      this.mainRenderPass.addDrawable(new CartesianAxes('line'));
 
-      this.dragHandle = new DragHandle(0.05);
-      this.dragHandlesPass.addDrawable(this.dragHandle, 'billboard')
+      this.dragHandle = new DragHandle(0.05, 'billboard');
+      this.dragHandlesPass.addDrawable(this.dragHandle)
 
       this.document.meshes = [];
     }
@@ -132,13 +132,13 @@ class Renderer {
     let mesh: Mesh;
     switch (type) {
       case 'Box':
-        mesh = new Mesh(box(8, 8));
+        mesh = new Mesh(box(8, 8), 'pipeline');
         break;
       case 'UVSphere':
-        mesh = new Mesh(uvSphere(8, 8));
+        mesh = new Mesh(uvSphere(8, 8), 'pipeline');
         break;
       case 'Tetrahedron':
-        mesh = new Mesh(tetrahedron());
+        mesh = new Mesh(tetrahedron(), 'pipeline');
         break;
       default:
         throw new Error('invalid type')
@@ -146,7 +146,7 @@ class Renderer {
     
     this.document.meshes.push(mesh);
 
-    this.mainRenderPass.addDrawable(mesh, 'pipeline');
+    this.mainRenderPass.addDrawable(mesh);
   }
 
   computeViewTransform() {

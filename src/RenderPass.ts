@@ -4,7 +4,6 @@ import DrawableInterface from "./Drawables/DrawableInterface";
 import PipelineInterface from "./Pipelines/PipelineInterface";
 
 type PipelineEntry = {
-  type: PipelineTypes,
   pipeline: PipelineInterface,
   drawables: DrawableInterface[],
 }
@@ -12,24 +11,16 @@ type PipelineEntry = {
 class RenderPass {
   pipelines: PipelineEntry[] = [];
 
-  addDrawable(drawable: DrawableInterface, pipelineType: PipelineTypes) {
-    let pipelineEntry = this.pipelines.find((p) => p.type === pipelineType) ?? null;
+  addDrawable(drawable: DrawableInterface) {
+    let pipelineEntry = this.pipelines.find((p) => p.pipeline === drawable.pipeline) ?? null;
 
     if (!pipelineEntry) {
-      const pipeline = PipelineManager.getInstance().getPipeline(pipelineType);
+      this.pipelines.push({
+        pipeline: drawable.pipeline,
+        drawables: []
+      })
 
-      if (pipeline) {
-        this.pipelines.push({
-          type: pipelineType,
-          pipeline,
-          drawables: []
-        })
-
-        pipelineEntry = this.pipelines[this.pipelines.length - 1];
-      }
-      else {
-        console.log(`pipeline ${pipelineType} not found`)
-      }
+      pipelineEntry = this.pipelines[this.pipelines.length - 1];
     }
 
     if (pipelineEntry) {

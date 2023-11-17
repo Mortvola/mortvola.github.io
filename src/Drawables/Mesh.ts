@@ -2,6 +2,7 @@ import { mat4, vec4, Vec4 } from 'wgpu-matrix';
 import { gpu } from "../Gpu";
 import SurfaceMesh from "./SurfaceMesh";
 import Drawable from './Drawable';
+import { PipelineTypes } from '../Pipelines/PipelineManager';
 
 class Mesh extends Drawable {
   mesh: SurfaceMesh;
@@ -14,10 +15,8 @@ class Mesh extends Drawable {
 
   uniformBuffer: GPUBuffer;
 
-  uniformBufferSize: number;
-
-  constructor(mesh: SurfaceMesh) {
-    super()
+  constructor(mesh: SurfaceMesh, pipelineType: PipelineTypes) {
+    super(pipelineType)
   
     if (!gpu.device) {
       throw new Error('device is not set')
@@ -60,10 +59,9 @@ class Mesh extends Drawable {
       ]
     })
 
-    this.uniformBufferSize = 16 * Float32Array.BYTES_PER_ELEMENT;
     this.uniformBuffer = gpu.device.createBuffer({
       label: 'uniforms',
-      size: this.uniformBufferSize,
+      size: 16 * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 

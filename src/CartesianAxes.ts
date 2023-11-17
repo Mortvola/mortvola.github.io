@@ -1,8 +1,12 @@
 import { gpu } from "./Gpu";
 import DrawableInterface from "./Drawables/DrawableInterface";
+import PipelineManager, { PipelineTypes } from "./Pipelines/PipelineManager";
+import PipelineInterface from "./Pipelines/PipelineInterface";
 
 class CartesianAxes implements DrawableInterface {
   vertexBuffer: GPUBuffer;
+
+  pipeline: PipelineInterface;
 
   vertices = [
     -2000, 0, 0, 1,
@@ -18,11 +22,19 @@ class CartesianAxes implements DrawableInterface {
     0, 1, 0, 1,    
   ];
 
-  constructor() {
+  constructor(pipelineType: PipelineTypes) {
     if (!gpu.device) {
       throw new Error('gepu device not set')
     }
+
+    const pipeline = PipelineManager.getInstance().getPipeline(pipelineType);
+
+    if (!pipeline) {
+      throw new Error(`pipeline ${pipelineType} not found`)
+    }
   
+    this.pipeline = pipeline;
+
     const gridLineColor = [0.3, 0.3, 0.3, 1];
 
     // x grid lines

@@ -1,7 +1,7 @@
 import DrawableInterface from "../Drawables/DrawableInterface";
 
 interface PipelineInterface {
-  // drawables: DrawableInterface[];
+  getBindGroupLayouts(): GPUBindGroupLayout[];
 
   render(passEncoder: GPURenderPassEncoder, drawables: DrawableInterface[]): void;
 }

@@ -7,6 +7,8 @@ import DrawableInterface from "../Drawables/DrawableInterface";
 class BillboardPipeline implements PipelineInterface {
   pipeline: GPURenderPipeline;
 
+  bindGroupLayouts: GPUBindGroupLayout[] = [];
+
   constructor() {
     if (!gpu.device) {
       throw new Error('device is not set')
@@ -17,27 +19,28 @@ class BillboardPipeline implements PipelineInterface {
       code: shader,
     })
     
-    const bindGroupLayout = gpu.device.createBindGroupLayout({
-      label: 'Billboard',
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {},
-        },
-      ]
-    })
-
-    const bindGroupLayout2 = gpu.device.createBindGroupLayout({
-      label: 'Billboard Scale',
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {},
-        },
-      ]
-    })
+    this.bindGroupLayouts = [
+      gpu.device.createBindGroupLayout({
+        label: 'Billboard',
+        entries: [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.VERTEX,
+            buffer: {},
+          },
+        ]
+      }),
+      gpu.device.createBindGroupLayout({
+        label: 'Billboard Scale',
+        entries: [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.VERTEX,
+            buffer: {},
+          },
+        ]
+      }),
+    ]
     
     const pipelineDescriptor: GPURenderPipelineDescriptor = {
       label: 'Billboard',
@@ -63,13 +66,16 @@ class BillboardPipeline implements PipelineInterface {
         label: 'Billboard',
         bindGroupLayouts: [
           bindGroups.camera!.layout,
-          bindGroupLayout,
-          bindGroupLayout2,
+          ...this.bindGroupLayouts,
         ]
       }),
     };
     
     this.pipeline = gpu.device.createRenderPipeline(pipelineDescriptor);
+  }
+
+  getBindGroupLayouts(): GPUBindGroupLayout[] {
+    return this.bindGroupLayouts;
   }
 
   render(passEncoder: GPURenderPassEncoder, drawables: DrawableInterface[]) {

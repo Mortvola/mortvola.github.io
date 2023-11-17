@@ -1,7 +1,11 @@
 import { mat4, vec3, Vec3 } from 'wgpu-matrix';
 import DrawableInterface from "./DrawableInterface";
+import PipelineInterface from '../Pipelines/PipelineInterface';
+import PipelineManager, { PipelineTypes } from '../Pipelines/PipelineManager';
 
 class Drawable implements DrawableInterface {
+  pipeline: PipelineInterface;
+
   transform = mat4.identity();
 
   translate = vec3.create(0, 0, 0);
@@ -9,6 +13,16 @@ class Drawable implements DrawableInterface {
   rotate = vec3.create(0, 0, 0);
 
   scale = vec3.create(1, 1, 1);
+
+  constructor(pipelineType: PipelineTypes) {
+    const pipeline = PipelineManager.getInstance().getPipeline(pipelineType);
+
+    if (!pipeline) {
+      throw new Error(`pipeline ${pipelineType} not found`)
+    }
+    
+    this.pipeline = pipeline;
+  }
 
   getTransform() {
     this.transform = mat4.identity();

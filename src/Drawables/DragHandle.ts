@@ -2,6 +2,7 @@ import { Vec4, vec4, Mat4, mat4, vec2 } from 'wgpu-matrix';
 import { intersectionPlane } from '../Math';
 import Drawable from './Drawable';
 import { gpu } from '../Gpu';
+import { PipelineTypes } from '../Pipelines/PipelineManager';
 
 class DragHandle extends Drawable {
   radius = new Float32Array(1);
@@ -10,16 +11,12 @@ class DragHandle extends Drawable {
 
   uniformBuffer: GPUBuffer;
 
-  uniformBufferSize: number;
-
   bindGroup2: GPUBindGroup;
 
   uniformBuffer2: GPUBuffer;
 
-  uniformBufferSize2: number;
-
-  constructor(radius: number) {
-    super()
+  constructor(radius: number, pipelineType: PipelineTypes) {
+    super(pipelineType)
 
     if (!gpu.device) {
       throw new Error('device is not set')
@@ -27,51 +24,31 @@ class DragHandle extends Drawable {
 
     this.radius[0] = radius;
 
-    const bindGroupLayout = gpu.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {},
-        },
-      ]
-    })
+    const bindGroupLayouts = this.pipeline.getBindGroupLayouts();
 
-    const bindGroupLayout2 = gpu.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {},
-        },
-      ]
-    })
-
-    this.uniformBufferSize = 16 * Float32Array.BYTES_PER_ELEMENT;
     this.uniformBuffer = gpu.device.createBuffer({
       label: 'uniforms',
-      size: this.uniformBufferSize,
+      size: 16 * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
     this.bindGroup = gpu.device.createBindGroup({
       label: 'bind group for model matrix',
-      layout: bindGroupLayout,
+      layout: bindGroupLayouts[0],
       entries: [
         { binding: 0, resource: { buffer: this.uniformBuffer }},
       ],
     });
 
-    this.uniformBufferSize2 = 1 * Float32Array.BYTES_PER_ELEMENT;
     this.uniformBuffer2 = gpu.device.createBuffer({
       label: 'uniforms',
-      size: this.uniformBufferSize2,
+      size: Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
     this.bindGroup2 = gpu.device.createBindGroup({
       label: 'bind group for model matrix',
-      layout: bindGroupLayout2,
+      layout: bindGroupLayouts[1],
       entries: [
         { binding: 0, resource: { buffer: this.uniformBuffer2 }},
       ],
@@ -80,7 +57,7 @@ class DragHandle extends Drawable {
 
   render(passEncoder: GPURenderPassEncoder) {
     if (!gpu.device) {
-      throw new Error('gpu devcie not set.')
+      throw new Error('gpu device not set.')
     }
 
     gpu.device.queue.writeBuffer(this.uniformBuffer, 0, this.getTransform() as Float32Array);

@@ -7,6 +7,8 @@ import DrawableInterface from "../Drawables/DrawableInterface";
 class Pipeline implements PipelineInterface {
   pipeline: GPURenderPipeline;
 
+  bindGroupLayouts: GPUBindGroupLayout[] = [];
+
   constructor() {
     if (!gpu.device) {
       throw new Error('device is not set')
@@ -17,22 +19,24 @@ class Pipeline implements PipelineInterface {
       code: shader,
     })
     
-    const bindGroupLayout = gpu.device.createBindGroupLayout({
-      label: 'Pipeline pipeline',
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {},
-        },
-      ]
-    })
+    this.bindGroupLayouts = [
+      gpu.device.createBindGroupLayout({
+        label: 'Pipeline pipeline',
+        entries: [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.VERTEX,
+            buffer: {},
+          },
+        ]
+      }),
+    ]
 
     const pipelineLayout = gpu.device.createPipelineLayout({
       bindGroupLayouts: [
         bindGroups.camera!.layout,
-        bindGroupLayout,
-      ]
+        ...this.bindGroupLayouts,
+      ],
     });
     
     const vertexBufferLayout: GPUVertexBufferLayout[] = [
@@ -83,6 +87,10 @@ class Pipeline implements PipelineInterface {
     };
     
     this.pipeline = gpu.device.createRenderPipeline(pipelineDescriptor);
+  }
+
+  getBindGroupLayouts(): GPUBindGroupLayout[] {
+    return this.bindGroupLayouts;
   }
 
   render(passEncoder: GPURenderPassEncoder, drawables: DrawableInterface[]) {
