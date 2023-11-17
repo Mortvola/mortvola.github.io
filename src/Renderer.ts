@@ -144,7 +144,6 @@ class Renderer {
         throw new Error('invalid type')
     }
     
-    mesh.translate = vec3.create(-5, 0, 0);
     this.document.meshes.push(mesh);
 
     this.mainRenderPass.addDrawable(mesh, 'pipeline');

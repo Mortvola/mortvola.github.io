@@ -1,28 +1,95 @@
 import { Vec4, vec4, Mat4, mat4, vec2 } from 'wgpu-matrix';
-import Mesh from "./Mesh";
 import { intersectionPlane } from '../Math';
-import { point } from './pont';
 import Drawable from './Drawable';
+import { gpu } from '../Gpu';
 
 class DragHandle extends Drawable {
-  radius: number;
+  radius = new Float32Array(1);
 
-  private mesh: Mesh
+  bindGroup: GPUBindGroup;
+
+  uniformBuffer: GPUBuffer;
+
+  uniformBufferSize: number;
+
+  bindGroup2: GPUBindGroup;
+
+  uniformBuffer2: GPUBuffer;
+
+  uniformBufferSize2: number;
 
   constructor(radius: number) {
     super()
 
-    this.mesh = new Mesh(point(radius))
+    if (!gpu.device) {
+      throw new Error('device is not set')
+    }
 
-    this.radius = radius;
+    this.radius[0] = radius;
+
+    const bindGroupLayout = gpu.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {},
+        },
+      ]
+    })
+
+    const bindGroupLayout2 = gpu.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {},
+        },
+      ]
+    })
+
+    this.uniformBufferSize = 16 * Float32Array.BYTES_PER_ELEMENT;
+    this.uniformBuffer = gpu.device.createBuffer({
+      label: 'uniforms',
+      size: this.uniformBufferSize,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.bindGroup = gpu.device.createBindGroup({
+      label: 'bind group for model matrix',
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.uniformBuffer }},
+      ],
+    });
+
+    this.uniformBufferSize2 = 1 * Float32Array.BYTES_PER_ELEMENT;
+    this.uniformBuffer2 = gpu.device.createBuffer({
+      label: 'uniforms',
+      size: this.uniformBufferSize2,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.bindGroup2 = gpu.device.createBindGroup({
+      label: 'bind group for model matrix',
+      layout: bindGroupLayout2,
+      entries: [
+        { binding: 0, resource: { buffer: this.uniformBuffer2 }},
+      ],
+    });
   }
 
-  render(passEncoder: GPURenderPassEncoder): void {
-    this.mesh.translate = this.translate;
-    this.mesh.rotate = this.rotate;
-    this.mesh.scale = this.scale;
+  render(passEncoder: GPURenderPassEncoder) {
+    if (!gpu.device) {
+      throw new Error('gpu devcie not set.')
+    }
 
-    this.mesh.render(passEncoder);
+    gpu.device.queue.writeBuffer(this.uniformBuffer, 0, this.getTransform() as Float32Array);
+    gpu.device.queue.writeBuffer(this.uniformBuffer2, 0, this.radius);
+
+    passEncoder.setBindGroup(1, this.bindGroup);
+    passEncoder.setBindGroup(2, this.bindGroup2);
+
+    passEncoder.draw(6);  
   }
 
   hitTest(p: Vec4, viewTransform: Mat4): Vec4 | null {
@@ -40,7 +107,7 @@ class DragHandle extends Drawable {
     if (p2) {
       const d = vec2.distance(point, p2)
 
-      if (d < Math.abs(this.radius * t[14])) {
+      if (d < Math.abs(this.radius[0] * t[14])) {
         if (p2[3] !== 1) {
           console.log(`p2: ${p2[3]}`)
         }

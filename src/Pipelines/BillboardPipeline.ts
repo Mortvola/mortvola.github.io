@@ -1,7 +1,7 @@
 import { bindGroups } from "../BindGroups";
 import { gpu } from "../Gpu";
 import PipelineInterface from "./PipelineInterface";
-import simpleShader from '../shaders/billboard.wgsl';
+import shader from '../shaders/billboard.wgsl';
 import DrawableInterface from "../Drawables/DrawableInterface";
 
 class BillboardPipeline implements PipelineInterface {
@@ -13,10 +13,12 @@ class BillboardPipeline implements PipelineInterface {
     }
 
     const shaderModule = gpu.device.createShaderModule({
-      code: simpleShader,
+      label: 'Billboard',
+      code: shader,
     })
     
     const bindGroupLayout = gpu.device.createBindGroupLayout({
+      label: 'Billboard',
       entries: [
         {
           binding: 0,
@@ -26,41 +28,26 @@ class BillboardPipeline implements PipelineInterface {
       ]
     })
 
-    const pipelineLayout = gpu.device.createPipelineLayout({
-      bindGroupLayouts: [
-        bindGroups.camera!.layout,
-        bindGroupLayout,
+    const bindGroupLayout2 = gpu.device.createBindGroupLayout({
+      label: 'Billboard Scale',
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {},
+        },
       ]
-    });
-    
-    const vertexBufferLayout: GPUVertexBufferLayout[] = [
-      {
-        attributes: [
-          {
-            shaderLocation: 0, // position
-            offset: 0,
-            format: "float32x4" as GPUVertexFormat,
-          },
-          {
-            shaderLocation: 1, // color
-            offset: 16,
-            format: "float32x4" as GPUVertexFormat,
-          },
-        ],
-        arrayStride: 32,
-        stepMode: "vertex",
-      },
-    ];
+    })
     
     const pipelineDescriptor: GPURenderPipelineDescriptor = {
+      label: 'Billboard',
       vertex: {
         module: shaderModule,
-        entryPoint: "vertex_main",
-        buffers: vertexBufferLayout,
+        entryPoint: "vertex_billboard",
       },
       fragment: {
         module: shaderModule,
-        entryPoint: "fragment_main",
+        entryPoint: "fragment_billboard",
         targets: [
           {
             format: navigator.gpu.getPreferredCanvasFormat(),
@@ -72,7 +59,14 @@ class BillboardPipeline implements PipelineInterface {
         cullMode: "back",
         frontFace: "ccw",
       },
-      layout: pipelineLayout,
+      layout: gpu.device.createPipelineLayout({
+        label: 'Billboard',
+        bindGroupLayouts: [
+          bindGroups.camera!.layout,
+          bindGroupLayout,
+          bindGroupLayout2,
+        ]
+      }),
     };
     
     this.pipeline = gpu.device.createRenderPipeline(pipelineDescriptor);

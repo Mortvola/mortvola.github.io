@@ -1,8 +1,7 @@
 import { bindGroups } from "../BindGroups";
 import { gpu } from "../Gpu";
-import Mesh from "../Drawables/Mesh";
 import PipelineInterface from "./PipelineInterface";
-import simpleShader from '../shaders/simple.wgsl';
+import shader from '../shaders/simple.wgsl';
 import DrawableInterface from "../Drawables/DrawableInterface";
 
 class Pipeline implements PipelineInterface {
@@ -14,10 +13,12 @@ class Pipeline implements PipelineInterface {
     }
 
     const shaderModule = gpu.device.createShaderModule({
-      code: simpleShader,
+      label: 'pipeline',
+      code: shader,
     })
     
     const bindGroupLayout = gpu.device.createBindGroupLayout({
+      label: 'Pipeline pipeline',
       entries: [
         {
           binding: 0,

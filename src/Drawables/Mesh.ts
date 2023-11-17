@@ -50,6 +50,7 @@ class Mesh extends Drawable {
     }
 
     const bindGroupLayout = gpu.device.createBindGroupLayout({
+      label: 'Mesh Bind Group',
       entries: [
         {
           binding: 0,
@@ -73,7 +74,6 @@ class Mesh extends Drawable {
         { binding: 0, resource: { buffer: this.uniformBuffer }},
       ],
     });
-
   }
 
   render(passEncoder: GPURenderPassEncoder) {

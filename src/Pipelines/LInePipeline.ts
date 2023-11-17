@@ -12,6 +12,7 @@ class LinePipeline implements PipelineInterface {
     }
 
     const shaderModule = gpu.device.createShaderModule({
+      label: 'line',
       code: lineShader,
     })
 
