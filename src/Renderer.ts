@@ -12,7 +12,6 @@ import SelectionList from './SelectionList';
 import DragHandlesPass from './DragHandlesPass';
 import RenderPass from './RenderPass';
 import DragHandle from './Drawables/DragHandle';
-import { point } from './Drawables/pont';
 
 export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron';
 
@@ -63,7 +62,7 @@ class Renderer {
   
   far = 2000;
 
-  cameraPosition = vec4.create(0, 0, 5, 1);
+  cameraPosition = vec4.create(0, 0, 25, 1);
 
   rotateX = 330;
 
@@ -109,13 +108,13 @@ class Renderer {
     this.context.configure({
       device: gpu.device,
       format: navigator.gpu.getPreferredCanvasFormat(),
-      alphaMode: "premultiplied",
+      alphaMode: "opaque",
     });
     
     if (!this.initialized) {
       this.mainRenderPass.addDrawable(new CartesianAxes('line'));
 
-      this.dragHandle = new DragHandle(0.05, 'billboard');
+      this.dragHandle = await DragHandle.make(0.02, 'billboard');
       this.dragHandlesPass.addDrawable(this.dragHandle)
 
       this.document.meshes = [];
@@ -264,7 +263,7 @@ class Renderer {
         const aspect = this.context.canvas.width / this.context.canvas.height;
 
         this.clipTransform = mat4.perspective(
-            degToRad(90), // settings.fieldOfView,
+            degToRad(45), // settings.fieldOfView,
             aspect,
             this.near,  // zNear
             this.far,   // zFar

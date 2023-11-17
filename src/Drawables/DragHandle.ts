@@ -15,7 +15,9 @@ class DragHandle extends Drawable {
 
   uniformBuffer2: GPUBuffer;
 
-  constructor(radius: number, pipelineType: PipelineTypes) {
+  bindGroup3: GPUBindGroup;
+
+  private constructor(radius: number, pipelineType: PipelineTypes, bitmap: ImageBitmap) {
     super(pipelineType)
 
     if (!gpu.device) {
@@ -33,7 +35,7 @@ class DragHandle extends Drawable {
     });
 
     this.bindGroup = gpu.device.createBindGroup({
-      label: 'bind group for model matrix',
+      label: 'DragHandle',
       layout: bindGroupLayouts[0],
       entries: [
         { binding: 0, resource: { buffer: this.uniformBuffer }},
@@ -47,12 +49,47 @@ class DragHandle extends Drawable {
     });
 
     this.bindGroup2 = gpu.device.createBindGroup({
-      label: 'bind group for model matrix',
+      label: 'DragHandle',
       layout: bindGroupLayouts[1],
       entries: [
         { binding: 0, resource: { buffer: this.uniformBuffer2 }},
       ],
     });
+
+    const texture = gpu.device!.createTexture({
+      // label: url,
+      format: 'rgba8unorm',
+      size: [bitmap.width, bitmap.height],
+      usage: GPUTextureUsage.TEXTURE_BINDING |
+             GPUTextureUsage.COPY_DST |
+             GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+
+    gpu.device.queue.copyExternalImageToTexture(
+      { source: bitmap },
+      { texture },
+      { width: bitmap.width, height: bitmap.height },
+    );
+
+    const sampler = gpu.device.createSampler();
+    
+    this.bindGroup3 = gpu.device.createBindGroup({
+      label: 'DragHandle',
+      layout: bindGroupLayouts[2],
+      entries: [
+        { binding: 0, resource: sampler },
+        { binding: 1, resource: texture.createView() },
+      ],
+    });
+  }
+
+  static async make(radius: number, pipelineType: PipelineTypes): Promise<DragHandle> {
+    const url = '/target.png';
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none' });
+
+    return new DragHandle(radius, pipelineType, bitmap);
   }
 
   render(passEncoder: GPURenderPassEncoder) {
@@ -65,6 +102,7 @@ class DragHandle extends Drawable {
 
     passEncoder.setBindGroup(1, this.bindGroup);
     passEncoder.setBindGroup(2, this.bindGroup2);
+    passEncoder.setBindGroup(3, this.bindGroup3);
 
     passEncoder.draw(6);  
   }

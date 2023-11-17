@@ -40,6 +40,21 @@ class BillboardPipeline implements PipelineInterface {
           },
         ]
       }),
+      gpu.device.createBindGroupLayout({
+        label: 'Billboard',
+        entries: [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.FRAGMENT,
+            sampler: {},
+          },
+          {
+            binding: 1,
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: {},
+          },
+        ]
+      })
     ]
     
     const pipelineDescriptor: GPURenderPipelineDescriptor = {
@@ -54,6 +69,16 @@ class BillboardPipeline implements PipelineInterface {
         targets: [
           {
             format: navigator.gpu.getPreferredCanvasFormat(),
+            blend: {
+              color: {
+                srcFactor: 'src-alpha' as GPUBlendFactor,
+                dstFactor: 'one-minus-src-alpha' as GPUBlendFactor,
+              },
+              alpha: {
+                srcFactor: 'src-alpha' as GPUBlendFactor,
+                dstFactor: 'one-minus-src-alpha' as GPUBlendFactor,
+              },
+            },
           },
         ],
       },
