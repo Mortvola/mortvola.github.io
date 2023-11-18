@@ -35,6 +35,7 @@ type HitTestInfo = {
 
 type DragInfo = {
   point: Vec4,
+  planarNormal: Vec4,
   objects: {
     mesh: Mesh,
     translate: Vec4
@@ -127,7 +128,7 @@ class Renderer {
       this.dragHandlesPass.addDrawable(this.xAxisPlaneDragHandle);
 
       this.yAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 0, 1)), 'drag-handles');
-      this.yAxisPlaneDragHandle.rotate = vec3.create(degToRad(90), 0, 0);
+      this.yAxisPlaneDragHandle.rotate = vec3.create(degToRad(270), 0, 0);
       this.yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
       this.dragHandlesPass.addDrawable(this.yAxisPlaneDragHandle);
 
@@ -382,6 +383,54 @@ class Renderer {
       if (point) {
         this.dragInfo = {
           point,
+          planarNormal: vec4.transformMat4(vec4.create(0, 0, 1, 0), this.viewTransform),
+          objects: this.selected.selection.map((object) => ({
+            mesh: object.mesh,
+            translate: object.mesh.translate,
+          }))
+        }
+
+        return null;
+      }
+
+      const { ray, origin } = this.computeHitTestRay(x, y);
+
+      let result =  this.xAxisPlaneDragHandle?.hitTest(origin, ray);
+
+      if (result) {
+        this.dragInfo = {
+          point: result.point,
+          planarNormal: vec4.create(0, 0, 1, 0),
+          objects: this.selected.selection.map((object) => ({
+            mesh: object.mesh,
+            translate: object.mesh.translate,
+          }))
+        }
+
+        return null;
+      }
+
+      result =  this.yAxisPlaneDragHandle?.hitTest(origin, ray);
+
+      if (result) {
+        this.dragInfo = {
+          point: result.point,
+          planarNormal: vec4.create(0, 1, 0, 0),
+          objects: this.selected.selection.map((object) => ({
+            mesh: object.mesh,
+            translate: object.mesh.translate,
+          }))
+        }
+
+        return null;
+      }
+
+      result =  this.zAxisPlaneDragHandle?.hitTest(origin, ray);
+
+      if (result) {
+        this.dragInfo = {
+          point: result.point,
+          planarNormal: vec4.create(1, 0, 0, 0),
           objects: this.selected.selection.map((object) => ({
             mesh: object.mesh,
             translate: object.mesh.translate,
@@ -428,11 +477,7 @@ class Renderer {
     if (this.dragInfo) {
       const { ray, origin } = this.computeHitTestRay(x, y);
 
-      // Transform plane normal to world space
-      let planeNormal = vec4.create(0, 0, 1, 0);
-      planeNormal = vec4.transformMat4(planeNormal, this.viewTransform)
-
-      const intersection = intersectionPlane(this.dragInfo.point, planeNormal, origin, ray);
+      const intersection = intersectionPlane(this.dragInfo.point, this.dragInfo.planarNormal, origin, ray);
 
       if (intersection) {
         let moveVector = vec4.subtract(intersection, this.dragInfo.point);
