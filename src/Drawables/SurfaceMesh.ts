@@ -6,10 +6,12 @@ class SurfaceMesh {
   vertices: number[] = [];
   indexes: number[] = [];
 
-  addVertex(point: Point): number {
+  addVertex(point: Point, color?: Vec3): number {
+    const c = color ?? vec3.create(point.x, point.y, point.z);
+
     this.vertices = this.vertices.concat([
       point.x, point.y, point.z, 1, // position
-      point.x, point.y, point.z, 1, // color
+      c[0], c[1], c[2], 1, // color
     ]);
     return (this.vertices.length / 8) - 1;
   }

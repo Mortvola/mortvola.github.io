@@ -1,10 +1,10 @@
 import { bindGroups } from "../BindGroups";
 import { gpu } from "../Gpu";
 import PipelineInterface from "./PipelineInterface";
-import shader from '../shaders/billboard.wgsl';
+import shader from '../shaders/simple.wgsl';
 import DrawableInterface from "../Drawables/DrawableInterface";
 
-class BillboardPipeline implements PipelineInterface {
+class DragHandlesPipeline implements PipelineInterface {
   pipeline: GPURenderPipeline;
 
   bindGroupLayouts: GPUBindGroupLayout[] = [];
@@ -15,13 +15,13 @@ class BillboardPipeline implements PipelineInterface {
     }
 
     const shaderModule = gpu.device.createShaderModule({
-      label: 'Billboard',
+      label: 'pipeline',
       code: shader,
     })
     
     this.bindGroupLayouts = [
       gpu.device.createBindGroupLayout({
-        label: 'Billboard',
+        label: 'Pipeline pipeline',
         entries: [
           {
             binding: 0,
@@ -30,61 +30,52 @@ class BillboardPipeline implements PipelineInterface {
           },
         ]
       }),
-      gpu.device.createBindGroupLayout({
-        label: 'Billboard Scale',
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {},
-          },
-        ]
-      }),
-      gpu.device.createBindGroupLayout({
-        label: 'Billboard',
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.FRAGMENT,
-            sampler: {},
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: {},
-          },
-        ]
-      })
     ]
+
+    const pipelineLayout = gpu.device.createPipelineLayout({
+      bindGroupLayouts: [
+        bindGroups.camera!.layout,
+        ...this.bindGroupLayouts,
+      ],
+    });
+    
+    const vertexBufferLayout: GPUVertexBufferLayout[] = [
+      {
+        attributes: [
+          {
+            shaderLocation: 0, // position
+            offset: 0,
+            format: "float32x4" as GPUVertexFormat,
+          },
+          {
+            shaderLocation: 1, // color
+            offset: 16,
+            format: "float32x4" as GPUVertexFormat,
+          },
+        ],
+        arrayStride: 32,
+        stepMode: "vertex",
+      },
+    ];
     
     const pipelineDescriptor: GPURenderPipelineDescriptor = {
-      label: 'Billboard',
       vertex: {
         module: shaderModule,
-        entryPoint: "vertex_billboard",
+        entryPoint: "vertex_main",
+        buffers: vertexBufferLayout,
       },
       fragment: {
         module: shaderModule,
-        entryPoint: "fragment_billboard",
+        entryPoint: "fragment_main",
         targets: [
           {
             format: navigator.gpu.getPreferredCanvasFormat(),
-            blend: {
-              color: {
-                srcFactor: 'src-alpha' as GPUBlendFactor,
-                dstFactor: 'one-minus-src-alpha' as GPUBlendFactor,
-              },
-              alpha: {
-                srcFactor: 'src-alpha' as GPUBlendFactor,
-                dstFactor: 'one-minus-src-alpha' as GPUBlendFactor,
-              },
-            },
           },
         ],
       },
       primitive: {
         topology: "triangle-list",
-        cullMode: "back",
+        cullMode: "none",
         frontFace: "ccw",
       },
       depthStencil: {
@@ -92,13 +83,7 @@ class BillboardPipeline implements PipelineInterface {
         depthCompare: "less",
         format: "depth24plus"
       },
-      layout: gpu.device.createPipelineLayout({
-        label: 'Billboard',
-        bindGroupLayouts: [
-          bindGroups.camera!.layout,
-          ...this.bindGroupLayouts,
-        ]
-      }),
+      layout: pipelineLayout,
     };
     
     this.pipeline = gpu.device.createRenderPipeline(pipelineDescriptor);
@@ -117,4 +102,4 @@ class BillboardPipeline implements PipelineInterface {
   }
 }
 
-export default BillboardPipeline;
+export default DragHandlesPipeline;

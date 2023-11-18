@@ -5,8 +5,8 @@ class DragHandlesPass extends RenderPass {
   centroid = vec4.create(0, 0, 0, 1);
 
   getDescriptor(view: GPUTextureView, depthView: GPUTextureView): GPURenderPassDescriptor {
-    return ({
-      label: 'drag handles render pass',
+    const descriptor: GPURenderPassDescriptor = {
+      label: 'drag handles pass',
       colorAttachments: [
         {
           view,
@@ -15,7 +15,18 @@ class DragHandlesPass extends RenderPass {
           storeOp: "store" as GPUStoreOp,
         },
       ],
-    });  
+    };
+
+    if (depthView) {
+      descriptor.depthStencilAttachment = {
+        view: depthView,
+        depthClearValue: 1.0,
+        depthLoadOp: "clear" as GPULoadOp,
+        depthStoreOp: "store" as GPUStoreOp,
+      };
+    }
+
+    return descriptor;
   }
 
   hitTest(x: number, y: number) {

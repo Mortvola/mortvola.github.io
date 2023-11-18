@@ -4,7 +4,7 @@ import Drawable from './Drawable';
 import { gpu } from '../Gpu';
 import { PipelineTypes } from '../Pipelines/PipelineManager';
 
-class DragHandle extends Drawable {
+class CameraPlaneDragHandle extends Drawable {
   radius = new Float32Array(1);
 
   bindGroup: GPUBindGroup;
@@ -83,13 +83,13 @@ class DragHandle extends Drawable {
     });
   }
 
-  static async make(radius: number, pipelineType: PipelineTypes): Promise<DragHandle> {
+  static async make(radius: number, pipelineType: PipelineTypes): Promise<CameraPlaneDragHandle> {
     const url = '/target.png';
     const res = await fetch(url);
     const blob = await res.blob();
     const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none' });
 
-    return new DragHandle(radius, pipelineType, bitmap);
+    return new CameraPlaneDragHandle(radius, pipelineType, bitmap);
   }
 
   render(passEncoder: GPURenderPassEncoder) {
@@ -141,4 +141,4 @@ class DragHandle extends Drawable {
   }
 }
 
-export default DragHandle;
+export default CameraPlaneDragHandle;

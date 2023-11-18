@@ -23,6 +23,7 @@ class SelectionList {
     }
   }
 
+  // Returns centroid of all selected objects in world space coordinates.
   getCentroid(): Vec4 {
     const sum = this.selection.reduce((accum, item) => {
       const centroid = vec4.transformMat4(item.centroid, item.mesh.getTransform());

@@ -11,7 +11,9 @@ import { tetrahedron } from './Drawables/tetrahedron';
 import SelectionList from './SelectionList';
 import DragHandlesPass from './DragHandlesPass';
 import RenderPass from './RenderPass';
-import DragHandle from './Drawables/DragHandle';
+import CameraPlaneDragHandle from './Drawables/CameraPlaneDragHandle';
+import AxisPlaneDragHandle from './Drawables/AxisPlaneDragHandle';
+import { plane } from './Drawables/plane';
 
 export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron';
 
@@ -86,7 +88,13 @@ class Renderer {
 
   dragHandlesPass = new DragHandlesPass();
 
-  dragHandle: DragHandle | null = null;
+  cameraPlaneDragHandle: CameraPlaneDragHandle | null = null;
+
+  xAxisPlaneDragHandle: Mesh | null = null;
+
+  yAxisPlaneDragHandle: Mesh | null = null;
+
+  zAxisPlaneDragHandle: Mesh | null = null;
 
   async setCanvas(canvas: HTMLCanvasElement) {
     await gpu.ready
@@ -114,8 +122,22 @@ class Renderer {
     if (!this.initialized) {
       this.mainRenderPass.addDrawable(new CartesianAxes('line'));
 
-      this.dragHandle = await DragHandle.make(0.02, 'billboard');
-      this.dragHandlesPass.addDrawable(this.dragHandle)
+      this.xAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(1, 0, 0)), 'drag-handles');
+      this.xAxisPlaneDragHandle.translate = vec3.create(2, 2, 0);
+      this.dragHandlesPass.addDrawable(this.xAxisPlaneDragHandle);
+
+      this.yAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 0, 1)), 'drag-handles');
+      this.yAxisPlaneDragHandle.rotate = vec3.create(degToRad(90), 0, 0);
+      this.yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
+      this.dragHandlesPass.addDrawable(this.yAxisPlaneDragHandle);
+
+      this.zAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 1, 0)), 'drag-handles');
+      this.zAxisPlaneDragHandle.rotate = vec3.create(0, degToRad(90), 0);
+      this.zAxisPlaneDragHandle.translate = vec3.create(0, 2, 2);
+      this.dragHandlesPass.addDrawable(this.zAxisPlaneDragHandle);
+
+      this.cameraPlaneDragHandle = await CameraPlaneDragHandle.make(0.02, 'billboard');
+      this.dragHandlesPass.addDrawable(this.cameraPlaneDragHandle)
 
       this.document.meshes = [];
     }
@@ -250,6 +272,10 @@ class Renderer {
       throw new Error('uniformBuffer is not set');
     }
 
+    this.document.meshes.forEach((mesh) => {
+      mesh.computeTransform()
+    })
+
     if (this.context.canvas.width !== this.renderedDimensions[0]
       || this.context.canvas.height !== this.renderedDimensions[1]
     ) {
@@ -282,16 +308,34 @@ class Renderer {
     this.mainRenderPass.render(view, this.depthTextureView!, commandEncoder)
 
     if (this.selected.selection.length > 0) {
-      // Trnslate the drag handle to the centroid of the selectd items.
-      this.dragHandle!.translate = this.selected.getCentroid();
+      // Transform camera position to world space.
+      const origin = vec4.transformMat4(vec4.create(0, 0, 0, 1), this.viewTransform);
+      const centroid = this.selected.getCentroid();
 
-      // Compute scaling so that the drag handle remains the same size no matter
-      // how far away it is.
-      // const transform = mat4.multiply(mat4.inverse(this.viewTransform), this.dragHandle!.getTransform())
-      // const scale = Math.abs(transform[14]); // This is the amount the point is translated from the camera space origin
-      // this.dragHandle!.scale = vec3.create(scale, scale, scale);
+      // We want to make the drag handles appear to be the same distance away 
+      // from the camera no matter how far the centroid is from the camera.
+      // Compute the current distance and a vector between the camera
+      // and the centroid. Adjust the translation by the difference
+      // between the actual distance and the desired apparent distance
+      // along the vector.
 
-      this.dragHandlesPass.render(view, null, commandEncoder);
+      const apparentDistance = 25;
+      let actualDistance = vec3.distance(origin, centroid);
+      const v = vec3.mulScalar(
+        vec3.normalize(vec3.subtract(origin, centroid)),
+        actualDistance - apparentDistance,
+      );
+
+      const mat = mat4.translate(mat4.identity(), centroid);
+      mat4.translate(mat, v, mat);
+
+
+      this.cameraPlaneDragHandle?.computeTransform(mat);
+      this.xAxisPlaneDragHandle?.computeTransform(mat);
+      this.yAxisPlaneDragHandle?.computeTransform(mat);
+      this.zAxisPlaneDragHandle?.computeTransform(mat);
+        
+      this.dragHandlesPass.render(view, this.depthTextureView!, commandEncoder);
     }
   
     gpu.device.queue.submit([commandEncoder.finish()]);  
@@ -333,7 +377,7 @@ class Renderer {
       const p = this.ndcToCameraSpace(x, y);
       p[3] = 0; // Convert p to a vector
 
-      const point = this.dragHandle?.hitTest(p, this.viewTransform);
+      const point = this.cameraPlaneDragHandle?.hitTest(p, this.viewTransform);
 
       if (point) {
         this.dragInfo = {

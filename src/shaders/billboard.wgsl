@@ -43,6 +43,9 @@ fn vertex_billboard(@builtin(vertex_index) vertexIndex : u32) -> VertexOut
     pos.z,
     pos.w
   );
+
+  output.position.z = 0;
+
   output.texcoord = texcoords[vertexIndex];
   return output;
 }

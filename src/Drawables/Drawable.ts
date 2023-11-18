@@ -1,4 +1,4 @@
-import { mat4, vec3, Vec3 } from 'wgpu-matrix';
+import { mat4, vec3, Mat4 } from 'wgpu-matrix';
 import DrawableInterface from "./DrawableInterface";
 import PipelineInterface from '../Pipelines/PipelineInterface';
 import PipelineManager, { PipelineTypes } from '../Pipelines/PipelineManager';
@@ -24,8 +24,8 @@ class Drawable implements DrawableInterface {
     this.pipeline = pipeline;
   }
 
-  getTransform() {
-    this.transform = mat4.identity();
+  computeTransform(transform?: Mat4) {
+    this.transform = transform ? mat4.copy(transform) : mat4.identity();
 
     mat4.translate(this.transform, this.translate, this.transform);
     mat4.rotateX(this.transform, this.rotate[0], this.transform);
@@ -34,6 +34,10 @@ class Drawable implements DrawableInterface {
     mat4.scale(this.transform, this.scale, this.transform);
 
     return this.transform;
+  }
+
+  getTransform() {
+    return this.transform
   }
 
   render(passEncoder: GPURenderPassEncoder): void {

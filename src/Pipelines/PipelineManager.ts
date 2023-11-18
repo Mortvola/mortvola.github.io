@@ -1,9 +1,10 @@
 import BillboardPipeline from "./BillboardPipeline";
+import DragHandlesPipeline from "./DragHandlesPipeline";
 import LinePipeline from "./LInePipeline";
 import Pipeline from "./Pipeline";
 import PipelineInterface from "./PipelineInterface";
 
-export type PipelineTypes = 'pipeline' | 'line' | 'billboard';
+export type PipelineTypes = 'pipeline' | 'line' | 'billboard' | 'drag-handles';
 
 type Pipelines = {
   type: PipelineTypes,
@@ -21,6 +22,7 @@ class PipelineManager {
     this.pipelines.push({ type: 'pipeline', pipeline: new Pipeline() })
     this.pipelines.push({ type: 'line', pipeline: new LinePipeline() });
     this.pipelines.push({ type: 'billboard', pipeline: new BillboardPipeline() });
+    this.pipelines.push({ type: 'drag-handles', pipeline: new DragHandlesPipeline() });
   }
 
   public static getInstance(): PipelineManager {
