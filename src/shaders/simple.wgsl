@@ -8,7 +8,7 @@ struct VertexOut {
   @location(0) color : vec4f
 }
 
-@group(0) @binding(0) var<uniform> perspective: mat4x4f;
+@group(0) @binding(0) var<uniform> projectionMatri: mat4x4f;
 @group(0) @binding(1) var<uniform> view: mat4x4f;
 
 @group(1) @binding(0) var<uniform> model: mat4x4f;
@@ -18,7 +18,7 @@ fn vertex_main(vert: Vertex) -> VertexOut
 {
   var output : VertexOut;
 
-  output.position = perspective * view * model * vert.position;
+  output.position = projectionMatri * view * model * vert.position;
   // output.position.x *= output.position.w;
   // output.position.y *= output.position.w;
 

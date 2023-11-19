@@ -1,4 +1,4 @@
-import { mat4, vec3, vec4, quat, Vec3, Vec4, setDefaultType } from 'wgpu-matrix';
+import { mat4, vec3, vec4, quat, Vec3, Vec4, Mat4, setDefaultType } from 'wgpu-matrix';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import { degToRad, intersectionPlane, normalizeDegrees } from "./Math";
@@ -12,7 +12,6 @@ import SelectionList from './SelectionList';
 import DragHandlesPass from './DragHandlesPass';
 import RenderPass from './RenderPass';
 import CameraPlaneDragHandle from './Drawables/CameraPlaneDragHandle';
-import AxisPlaneDragHandle from './Drawables/AxisPlaneDragHandle';
 import { plane } from './Drawables/plane';
 
 export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron';
@@ -41,6 +40,8 @@ type DragInfo = {
     translate: Vec4
   }[],
 }
+
+export type ProjectionType = 'Perspective' | 'Orthographic';
 
 class Renderer {
   initialized = false;
@@ -71,7 +72,11 @@ class Renderer {
 
   rotateY = 45;
 
-  clipTransform = mat4.identity();
+  projection: ProjectionType = 'Perspective';
+
+  perspectiveTransform = mat4.identity();
+
+  orthographicTransform = mat4.identity();
 
   viewTransform = mat4.identity();
 
@@ -289,11 +294,20 @@ class Renderer {
 
         const aspect = this.context.canvas.width / this.context.canvas.height;
 
-        this.clipTransform = mat4.perspective(
+        this.perspectiveTransform = mat4.perspective(
             degToRad(45), // settings.fieldOfView,
             aspect,
             this.near,  // zNear
             this.far,   // zFar
+        );
+
+        this.orthographicTransform = mat4.ortho(
+          -this.context.canvas.width / 80,
+          this.context.canvas.width / 80,
+          -this.context.canvas.height / 80,
+          this.context.canvas.height/ 80,
+          // this.near, this.far,
+          -200, 200,
         );
     
         this.renderedDimensions = [this.context.canvas.width, this.context.canvas.height]
@@ -301,7 +315,13 @@ class Renderer {
 
     const view = this.context.getCurrentTexture().createView();
 
-    gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[0].buffer, 0, this.clipTransform as Float32Array);
+    if (this.projection === 'Perspective') {
+      gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[0].buffer, 0, this.perspectiveTransform as Float32Array);      
+    }
+    else {
+      gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[0].buffer, 0, this.orthographicTransform as Float32Array);      
+    }
+
     gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[1].buffer, 0, mat4.inverse(this.viewTransform)  as Float32Array);
 
     const commandEncoder = gpu.device.createCommandEncoder();
@@ -337,7 +357,13 @@ class Renderer {
   }
 
   ndcToCameraSpace(x: number, y: number) {
-    const inverseMatrix = mat4.inverse(this.clipTransform);
+    let inverseMatrix: Mat4;
+    if (this.projection === 'Perspective') {
+      inverseMatrix = mat4.inverse(this.perspectiveTransform);
+    }
+    else {
+      inverseMatrix = mat4.inverse(this.orthographicTransform);
+    }
 
     // Transform point from NDC to camera space.
     let point = vec4.create(x, y, 0, 1);

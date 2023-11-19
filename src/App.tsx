@@ -116,6 +116,17 @@ function App() {
     setShowMenu(false);
   }
 
+  const handleProjectionClick = () => {
+    switch (renderer.projection) {
+      case 'Perspective':
+        renderer.projection = 'Orthographic';
+        break;
+      case 'Orthographic':
+        renderer.projection = 'Perspective';
+        break;
+    }
+  }
+
   return (
     <div className="App">
       <div className="add-button">
@@ -126,6 +137,7 @@ function App() {
           <div onClick={handleAddTetrahedronClick}>Tetrahedon</div>
         </div>
       </div>
+      <button type="button" className="settings-button" onClick={handleProjectionClick}>projection</button>
       <canvas
         ref={canvasRef}
         width={clientWidth}

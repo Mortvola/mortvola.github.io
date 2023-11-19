@@ -3,7 +3,7 @@ struct VertexOut {
   @location(0) texcoord: vec2f,
 }
 
-@group(0) @binding(0) var<uniform> perspective: mat4x4f;
+@group(0) @binding(0) var<uniform> projectionMatrix: mat4x4f;
 @group(0) @binding(1) var<uniform> view: mat4x4f;
 
 @group(1) @binding(0) var<uniform> model: mat4x4f;
@@ -37,7 +37,7 @@ fn vertex_billboard(@builtin(vertex_index) vertexIndex : u32) -> VertexOut
   // much a point at the origin will have been translated.
   var pos = (view * model)[3];
 
-  output.position = perspective * vec4(
+  output.position = projectionMatrix * vec4(
     pos.x + verts[vertexIndex].x * radius * pos.z,
     pos.y + verts[vertexIndex].y * radius * pos.z,
     pos.z,
