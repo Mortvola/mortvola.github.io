@@ -24,14 +24,22 @@ class Drawable implements DrawableInterface {
     this.pipeline = pipeline;
   }
 
-  computeTransform(transform?: Mat4) {
-    this.transform = transform ? mat4.copy(transform) : mat4.identity();
+  computeTransform(transform?: Mat4, prepend = true) {
+    this.transform = mat4.identity();
+
+    if (prepend && transform) {
+      this.transform = mat4.copy(transform);
+    }
 
     mat4.translate(this.transform, this.translate, this.transform);
     mat4.rotateX(this.transform, this.rotate[0], this.transform);
     mat4.rotateY(this.transform, this.rotate[1], this.transform);
     mat4.rotateZ(this.transform, this.rotate[2], this.transform);
     mat4.scale(this.transform, this.scale, this.transform);
+
+    if (!prepend && transform) {
+      mat4.multiply(this.transform, transform, this.transform);
+    }
 
     return this.transform;
   }

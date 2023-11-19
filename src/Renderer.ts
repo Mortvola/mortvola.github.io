@@ -315,27 +315,21 @@ class Renderer {
 
       // We want to make the drag handles appear to be the same distance away 
       // from the camera no matter how far the centroid is from the camera.
-      // Compute the current distance and a vector between the camera
-      // and the centroid. Adjust the translation by the difference
-      // between the actual distance and the desired apparent distance
-      // along the vector.
-
       const apparentDistance = 25;
       let actualDistance = vec3.distance(origin, centroid);
-      const v = vec3.mulScalar(
-        vec3.normalize(vec3.subtract(origin, centroid)),
-        actualDistance - apparentDistance,
-      );
+      const scale = actualDistance / apparentDistance;
 
       const mat = mat4.translate(mat4.identity(), centroid);
-      mat4.translate(mat, v, mat);
-
+      mat4.scale(mat, vec3.create(scale, scale, scale), mat)
 
       this.cameraPlaneDragHandle?.computeTransform(mat);
+
       this.xAxisPlaneDragHandle?.computeTransform(mat);
+
       this.yAxisPlaneDragHandle?.computeTransform(mat);
+      
       this.zAxisPlaneDragHandle?.computeTransform(mat);
-        
+
       this.dragHandlesPass.render(view, this.depthTextureView!, commandEncoder);
     }
   
@@ -381,9 +375,13 @@ class Renderer {
       const point = this.cameraPlaneDragHandle?.hitTest(p, this.viewTransform);
 
       if (point) {
+        const { ray, origin } = this.computeHitTestRay(x, y);
+        const planeNormal = vec4.transformMat4(vec4.create(0, 0, 1, 0), this.viewTransform);
+        const intersection = intersectionPlane(this.selected.getCentroid(), planeNormal, origin, ray);
+
         this.dragInfo = {
-          point,
-          planarNormal: vec4.transformMat4(vec4.create(0, 0, 1, 0), this.viewTransform),
+          point: intersection!,
+          planarNormal: planeNormal,
           objects: this.selected.selection.map((object) => ({
             mesh: object.mesh,
             translate: object.mesh.translate,
@@ -395,6 +393,7 @@ class Renderer {
 
       const { ray, origin } = this.computeHitTestRay(x, y);
 
+      // X Plane
       let result =  this.xAxisPlaneDragHandle?.hitTest(origin, ray);
 
       if (result) {
@@ -410,6 +409,7 @@ class Renderer {
         return null;
       }
 
+      // Y plane
       result =  this.yAxisPlaneDragHandle?.hitTest(origin, ray);
 
       if (result) {
@@ -425,6 +425,7 @@ class Renderer {
         return null;
       }
 
+      // Z Plane
       result =  this.zAxisPlaneDragHandle?.hitTest(origin, ray);
 
       if (result) {
@@ -477,18 +478,13 @@ class Renderer {
     if (this.dragInfo) {
       const { ray, origin } = this.computeHitTestRay(x, y);
 
-      const intersection = intersectionPlane(this.dragInfo.point, this.dragInfo.planarNormal, origin, ray);
+      let intersection = intersectionPlane(this.dragInfo.point, this.dragInfo.planarNormal, origin, ray);
 
       if (intersection) {
         let moveVector = vec4.subtract(intersection, this.dragInfo.point);
-
         this.dragInfo.objects.forEach((object) => {
-          // Transform move vector from world to model space
-          moveVector = vec4.transformMat4(moveVector, mat4.inverse(object.mesh.getTransform()))
-
           // Add the move vector to the original translation for the object.
-          const newTranslation = vec4.add(object.translate, moveVector);
-          object.mesh.translate = vec3.create(newTranslation[0], newTranslation[1], newTranslation[2]);  
+          object.mesh.translate = vec3.add(object.translate, moveVector);
         })
       }
     }

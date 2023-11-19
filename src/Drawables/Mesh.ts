@@ -97,10 +97,10 @@ class Mesh extends Drawable {
     const result = this.mesh.hitTest(localOrigin, localVector);
 
     if (result) {
-        // Convert the intersection point into world coordinates.
-        const point = vec4.transformMat4(result.point, this.getTransform());
+      // Convert the intersection point into world coordinates.
+      const point = vec4.transformMat4(result.point, this.getTransform());
 
-        return { point, t: result.t, mesh: this };      
+      return { point, t: result.t, mesh: this };      
     }
 
     return null;

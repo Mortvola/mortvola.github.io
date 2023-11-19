@@ -113,25 +113,14 @@ class CameraPlaneDragHandle extends Drawable {
 
     let point = vec4.create(t[12], t[13], t[14], t[15])
 
-    if (point[3] !== 1) {
-      console.log(`point: ${point[3]}`)
-    }
-
     const p2 = intersectionPlane(point, vec4.create(0, 0, 1, 0), vec4.create(0, 0, 0, 1), p);
   
     if (p2) {
       const d = vec2.distance(point, p2)
 
       if (d < Math.abs(this.radius[0] * t[14])) {
-        if (p2[3] !== 1) {
-          console.log(`p2: ${p2[3]}`)
-        }
-
-        // p2[3] = 1;
+        // Transform point to world space
         const wp = vec4.transformMat4(p2, viewTransform);
-
-        // console.log(`p2: ${p2}`)
-        // console.log(`wp: ${wp}`)
 
         return wp;
       }
