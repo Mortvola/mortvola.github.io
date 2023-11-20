@@ -127,6 +127,11 @@ const  App = () => {
     setShowMenu(false);
   }
 
+  const handleAddCylinderClick = () => {
+    renderer.addObject('Cylinder');
+    setShowMenu(false);
+  }
+
   const handleProjectionClick = () => {
     switch (renderer.projection) {
       case 'Perspective':
@@ -151,6 +156,7 @@ const  App = () => {
               <div onClick={handleAddSphereClick}>UV Sphere</div>
               <div onClick={handleAddBoxClick}>Box</div>
               <div onClick={handleAddTetrahedronClick}>Tetrahedon</div>
+              <div onClick={handleAddCylinderClick}>Cylinder</div>
             </div>
           </div>
           <button type="button" className="settings-button" onClick={handleProjectionClick}>

@@ -17,8 +17,9 @@ import RenderPass from './RenderPass';
 import CameraPlaneDragHandle from './Drawables/CameraPlaneDragHandle';
 import { plane } from './Drawables/plane';
 import Drawable from './Drawables/Drawable';
+import { cylinder } from './Drawables/cylinder';
 
-export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron';
+export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron' | 'Cylinder';
 
 const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
   requestAnimationFrame((timestamp: number) => {
@@ -184,6 +185,9 @@ class Renderer {
         break;
       case 'Tetrahedron':
         mesh = new Mesh(tetrahedron(), 'pipeline');
+        break;
+      case 'Cylinder':
+        mesh = new Mesh(cylinder(8), 'pipeline');
         break;
       default:
         throw new Error('invalid type')
