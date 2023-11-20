@@ -1,4 +1,5 @@
 import { vec4, Vec4 } from 'wgpu-matrix';
+import { makeObservable, observable } from 'mobx';
 import Mesh from "./Drawables/Mesh";
 
 type SelectedItem = {
@@ -8,6 +9,12 @@ type SelectedItem = {
 
 class SelectionList {
   selection: SelectedItem[] = []
+
+  constructor() {
+    makeObservable(this, {
+      selection: observable,
+    })
+  }
 
   addItem(mesh: Mesh) {
     // Determine if mesh is already in the list. If so, don't add it.

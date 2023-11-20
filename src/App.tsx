@@ -1,12 +1,22 @@
 import React from 'react';
 import './App.scss';
-import Renderer from './Renderer';
+import Renderer, { ProjectionType } from './Renderer';
+import Transformations from './Transformations';
+import { StoreContext, store } from './state/Store';
+import Drawable from './Drawables/Drawable';
+import { gpu } from './Gpu';
 
-const renderer = new Renderer();
+const renderer = await Renderer.create();
 
-function App() {
+const  App = () => {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const [showMenu, setShowMenu] = React.useState<boolean>(false);
+  const [projection, setProjection] = React.useState<ProjectionType>(renderer.projection);
+  const [selected, setSelected] = React.useState<Drawable | null>(null);
+
+  const handleSelect = React.useCallback((mesh: Drawable | null) => {
+    setSelected(mesh);
+  }, [])
 
   React.useEffect(() => {
         const element = canvasRef.current;
@@ -14,9 +24,10 @@ function App() {
     if (element) {
       (async () => {
         await renderer.setCanvas(element);
+        renderer.onSelect(handleSelect)
       })()  
     }
-  }, [])
+  }, [handleSelect])
 
   const handlePointerDown: React.PointerEventHandler<HTMLCanvasElement> = (event) => {
     const element = canvasRef.current;
@@ -56,35 +67,35 @@ function App() {
     }
   }
 
-  const getVh = React.useCallback(() => {
-    return Math.max(
-      document.documentElement.clientHeight || 0,
-      window.innerHeight || 0
-    );
-  }, []);
-
-  const getVw = React.useCallback(() => {
-      return Math.max(
-        document.documentElement.clientWidth || 0,
-        window.innerWidth || 0
-      );
-  }, []);
-
-  const [clientWidth, setClientWidth] = React.useState<number>(getVw());
-  const [clientHeight, setClientHeight] = React.useState<number>(getVh());
-
   React.useEffect(() => {
-    const handleResize = () => {
-      setClientWidth(getVw());
-      setClientHeight(getVh());
+    const element = canvasRef.current;
+
+    if (element) {
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const dpr = Math.max(devicePixelRatio, 2);
+
+          const width = entry.devicePixelContentBoxSize?.[0].inlineSize ??
+            entry.contentBoxSize[0].inlineSize * dpr;
+          const height = entry.devicePixelContentBoxSize?.[0].blockSize ??
+            entry.contentBoxSize[0].blockSize * dpr;
+
+           const canvas = entry.target as HTMLCanvasElement;
+          canvas.width = Math.max(1, Math.min(width, gpu.device?.limits.maxTextureDimension2D ?? 1));
+          canvas.height = Math.max(1, Math.min(height, gpu.device?.limits.maxTextureDimension2D ?? 1));
+        }
+      })
+
+      try {
+        resizeObserver.observe(element, { box: 'device-pixel-content-box' });
+      }
+      catch (error) {
+        resizeObserver.observe(element, { box: 'content-box' });
+      }
+
+      return () => resizeObserver.disconnect();
     }
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [getVh, getVw]);
+  }, []);
 
   const handleWheel: React.WheelEventHandler<HTMLCanvasElement> = (event) => {
     if (event.ctrlKey) {
@@ -125,29 +136,36 @@ function App() {
         renderer.projection = 'Perspective';
         break;
     }
+
+    setProjection(renderer.projection)
   }
 
   return (
-    <div className="App">
-      <div className="add-button">
-        <button type="button" onClick={handleAddClick}>+</button>
-        <div className={`object-menu ${showMenu ? 'show' : ''}`}>
-          <div onClick={handleAddSphereClick}>UV Sphere</div>
-          <div onClick={handleAddBoxClick}>Box</div>
-          <div onClick={handleAddTetrahedronClick}>Tetrahedon</div>
+    <StoreContext.Provider value={store}>
+      <div className="App">
+        <Transformations drawable={selected}/>
+        <div>
+          <div className="add-button">
+            <button type="button" onClick={handleAddClick}>+</button>
+            <div className={`object-menu ${showMenu ? 'show' : ''}`}>
+              <div onClick={handleAddSphereClick}>UV Sphere</div>
+              <div onClick={handleAddBoxClick}>Box</div>
+              <div onClick={handleAddTetrahedronClick}>Tetrahedon</div>
+            </div>
+          </div>
+          <button type="button" className="settings-button" onClick={handleProjectionClick}>
+            {projection}
+          </button>
+          <canvas
+            ref={canvasRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onWheel={handleWheel}
+          />
         </div>
-      </div>
-      <button type="button" className="settings-button" onClick={handleProjectionClick}>projection</button>
-      <canvas
-        ref={canvasRef}
-        width={clientWidth}
-        height={clientHeight}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onWheel={handleWheel}
-      />
-    </div>
+      </div>      
+    </StoreContext.Provider>
   );
 }
 

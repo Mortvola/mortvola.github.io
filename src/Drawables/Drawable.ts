@@ -1,3 +1,4 @@
+import { makeObservable, observable, runInAction } from 'mobx';
 import { mat4, vec3, Mat4 } from 'wgpu-matrix';
 import DrawableInterface from "./DrawableInterface";
 import PipelineInterface from '../Pipelines/PipelineInterface';
@@ -22,6 +23,12 @@ class Drawable implements DrawableInterface {
     }
     
     this.pipeline = pipeline;
+
+    makeObservable(this, {
+      translate: observable,
+      rotate: observable,
+      scale: observable,
+    })
   }
 
   computeTransform(transform?: Mat4, prepend = true) {

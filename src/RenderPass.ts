@@ -1,5 +1,4 @@
 import { bindGroups } from "./BindGroups";
-import PipelineManager, { PipelineTypes } from "./Pipelines/PipelineManager";
 import DrawableInterface from "./Drawables/DrawableInterface";
 import PipelineInterface from "./Pipelines/PipelineInterface";
 

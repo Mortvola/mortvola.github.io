@@ -1,4 +1,7 @@
-import { mat4, vec3, vec4, quat, Vec3, Vec4, Mat4, setDefaultType } from 'wgpu-matrix';
+import {
+  mat4, vec3, vec4, quat, Vec3, Vec4, Mat4, setDefaultType,
+} from 'wgpu-matrix';
+import { runInAction } from 'mobx';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
 import { degToRad, intersectionPlane, normalizeDegrees } from "./Math";
@@ -13,6 +16,7 @@ import DragHandlesPass from './DragHandlesPass';
 import RenderPass from './RenderPass';
 import CameraPlaneDragHandle from './Drawables/CameraPlaneDragHandle';
 import { plane } from './Drawables/plane';
+import Drawable from './Drawables/Drawable';
 
 export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron';
 
@@ -94,14 +98,47 @@ class Renderer {
 
   dragHandlesPass = new DragHandlesPass();
 
-  cameraPlaneDragHandle: CameraPlaneDragHandle | null = null;
+  cameraPlaneDragHandle: CameraPlaneDragHandle;
 
-  xAxisPlaneDragHandle: Mesh | null = null;
+  xAxisPlaneDragHandle: Mesh;
 
-  yAxisPlaneDragHandle: Mesh | null = null;
+  yAxisPlaneDragHandle: Mesh;
 
-  zAxisPlaneDragHandle: Mesh | null = null;
+  zAxisPlaneDragHandle: Mesh;
 
+  onSelectCallback: ((drawable: Drawable | null) => void) | null = null;
+
+  constructor(cameraPlaneDragHandle: CameraPlaneDragHandle) {
+    this.mainRenderPass.addDrawable(new CartesianAxes('line'));
+
+    this.xAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(1, 0, 0)), 'drag-handles');
+    this.xAxisPlaneDragHandle.translate = vec3.create(2, 2, 0);
+    this.dragHandlesPass.addDrawable(this.xAxisPlaneDragHandle);
+
+    this.yAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 0, 1)), 'drag-handles');
+    this.yAxisPlaneDragHandle.rotate = vec3.create(degToRad(270), 0, 0);
+    this.yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
+    this.dragHandlesPass.addDrawable(this.yAxisPlaneDragHandle);
+
+    this.zAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 1, 0)), 'drag-handles');
+    this.zAxisPlaneDragHandle.rotate = vec3.create(0, degToRad(90), 0);
+    this.zAxisPlaneDragHandle.translate = vec3.create(0, 2, 2);
+    this.dragHandlesPass.addDrawable(this.zAxisPlaneDragHandle);
+
+    this.cameraPlaneDragHandle = cameraPlaneDragHandle;
+    this.dragHandlesPass.addDrawable(this.cameraPlaneDragHandle)
+
+    this.document.meshes = [];
+  }
+
+  static async create() {
+    await gpu.ready
+
+    const cameraPlaneDragHandle = await CameraPlaneDragHandle.make(0.02, 'billboard');
+
+    return new Renderer(cameraPlaneDragHandle)
+  }
+  
   async setCanvas(canvas: HTMLCanvasElement) {
     await gpu.ready
 
@@ -125,36 +162,17 @@ class Renderer {
       alphaMode: "opaque",
     });
     
-    if (!this.initialized) {
-      this.mainRenderPass.addDrawable(new CartesianAxes('line'));
-
-      this.xAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(1, 0, 0)), 'drag-handles');
-      this.xAxisPlaneDragHandle.translate = vec3.create(2, 2, 0);
-      this.dragHandlesPass.addDrawable(this.xAxisPlaneDragHandle);
-
-      this.yAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 0, 1)), 'drag-handles');
-      this.yAxisPlaneDragHandle.rotate = vec3.create(degToRad(270), 0, 0);
-      this.yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
-      this.dragHandlesPass.addDrawable(this.yAxisPlaneDragHandle);
-
-      this.zAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 1, 0)), 'drag-handles');
-      this.zAxisPlaneDragHandle.rotate = vec3.create(0, degToRad(90), 0);
-      this.zAxisPlaneDragHandle.translate = vec3.create(0, 2, 2);
-      this.dragHandlesPass.addDrawable(this.zAxisPlaneDragHandle);
-
-      this.cameraPlaneDragHandle = await CameraPlaneDragHandle.make(0.02, 'billboard');
-      this.dragHandlesPass.addDrawable(this.cameraPlaneDragHandle)
-
-      this.document.meshes = [];
-    }
-
     this.computeViewTransform();
 
     this.start();
 
     this.initialized = true;
   }
-  
+
+  onSelect(callback: (drawable: Drawable | null) => void) {
+    this.onSelectCallback = callback;
+  }
+
   addObject(type: ObjectTypes) {
     let mesh: Mesh;
     switch (type) {
@@ -510,7 +528,9 @@ class Renderer {
         let moveVector = vec4.subtract(intersection, this.dragInfo.point);
         this.dragInfo.objects.forEach((object) => {
           // Add the move vector to the original translation for the object.
-          object.mesh.translate = vec3.add(object.translate, moveVector);
+          runInAction(() => {
+            object.mesh.translate = vec3.add(object.translate, moveVector);
+          })
         })
       }
     }
@@ -548,10 +568,18 @@ class Renderer {
       if (result && result.mesh === this.hitTestInfo.mesh) {
         this.selected.clear();
         this.selected.addItem(result.mesh)
+
+        if (this.onSelectCallback) {
+          this.onSelectCallback(result.mesh);
+        }
       }
     }
     else {
       this.selected.clear()
+
+      if (this.onSelectCallback) {
+        this.onSelectCallback(null);
+      }
     }
 
     this.hitTestInfo = null;
