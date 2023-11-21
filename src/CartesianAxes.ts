@@ -1,4 +1,4 @@
-import { gpu } from "./Gpu";
+import { gpu } from "./Renderer";
 import DrawableInterface from "./Drawables/DrawableInterface";
 import PipelineManager, { PipelineTypes } from "./Pipelines/PipelineManager";
 import PipelineInterface from "./Pipelines/PipelineInterface";
@@ -23,7 +23,7 @@ class CartesianAxes implements DrawableInterface {
   ];
 
   constructor(pipelineType: PipelineTypes) {
-    if (!gpu.device) {
+    if (!gpu) {
       throw new Error('gepu device not set')
     }
 

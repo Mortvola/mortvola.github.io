@@ -2,8 +2,8 @@ import {
   mat4, vec3, vec4, quat, Vec3, Vec4, Mat4, setDefaultType,
 } from 'wgpu-matrix';
 import { runInAction } from 'mobx';
-import { bindGroups } from "./BindGroups";
-import { gpu } from "./Gpu";
+import BindGroups from "./BindGroups";
+import Gpu from "./Gpu";
 import { closestPointBetweenRays, degToRad, intersectionPlane, normalizeDegrees } from "./Math";
 import Mesh from "./Drawables/Mesh";
 import Models from './Models';
@@ -155,17 +155,17 @@ class Renderer {
   }
 
   static async create() {
-    await gpu.ready
+    if (gpu) {
+      const cameraPlaneDragHandle = await CameraPlaneDragHandle.make(0.02, 'billboard');
 
-    const cameraPlaneDragHandle = await CameraPlaneDragHandle.make(0.02, 'billboard');
+      return new Renderer(cameraPlaneDragHandle)  
+    }
 
-    return new Renderer(cameraPlaneDragHandle)
+    return null;
   }
   
   async setCanvas(canvas: HTMLCanvasElement) {
-    await gpu.ready
-
-    if (!gpu.device) {
+    if (!gpu) {
       throw new Error('Could not acquire device');
     }
 
@@ -313,7 +313,7 @@ class Renderer {
   }
 
   drawScene() {
-    if (!gpu.device) {
+    if (!gpu) {
       throw new Error('device is not set')
     }
 
@@ -637,5 +637,9 @@ class Renderer {
     this.hitTestInfo = null;
   }
 }
+
+export const gpu = await Gpu.create();
+export const bindGroups = new BindGroups();
+export const renderer = await Renderer.create();
 
 export default Renderer;

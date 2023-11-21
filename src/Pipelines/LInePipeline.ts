@@ -1,4 +1,4 @@
-import { gpu } from "../Gpu";
+import { gpu } from "../Renderer";
 import PipelineInterface from "./PipelineInterface";
 import lineShader from '../shaders/line.wgsl';
 import DrawableInterface from "../Drawables/DrawableInterface";
@@ -9,7 +9,7 @@ class LinePipeline implements PipelineInterface {
   bindGroupLayouts: GPUBindGroupLayout[] = [];
 
   constructor() {
-    if (!gpu.device) {
+    if (!gpu) {
       throw new Error('device is not set')
     }
 

@@ -1,7 +1,7 @@
 import { Vec4, vec4 } from 'wgpu-matrix';
 import { PipelineTypes } from "../Pipelines/PipelineManager";
 import Drawable from "./Drawable";
-import { gpu } from '../Gpu';
+import { gpu } from '../Renderer';
 
 class Line extends Drawable {
   vertices: number[];
@@ -16,7 +16,7 @@ class Line extends Drawable {
       p2[0], p2[1], p2[2], p2[3], color[0], color[1], color[2], color[3],
     ]
 
-    this.vertexBuffer = gpu.device!.createBuffer({
+    this.vertexBuffer = gpu!.device.createBuffer({
       size: this.vertices.length * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.VERTEX,
       mappedAtCreation: true,

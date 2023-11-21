@@ -1,7 +1,7 @@
 import { Vec4, vec4, Mat4, mat4, vec2 } from 'wgpu-matrix';
 import { intersectionPlane } from '../Math';
 import Drawable from './Drawable';
-import { gpu } from '../Gpu';
+import { gpu } from '../Renderer';
 import { PipelineTypes } from '../Pipelines/PipelineManager';
 
 class CameraPlaneDragHandle extends Drawable {
@@ -20,7 +20,7 @@ class CameraPlaneDragHandle extends Drawable {
   private constructor(radius: number, pipelineType: PipelineTypes, bitmap: ImageBitmap) {
     super(pipelineType)
 
-    if (!gpu.device) {
+    if (!gpu) {
       throw new Error('device is not set')
     }
 
@@ -93,7 +93,7 @@ class CameraPlaneDragHandle extends Drawable {
   }
 
   render(passEncoder: GPURenderPassEncoder) {
-    if (!gpu.device) {
+    if (!gpu) {
       throw new Error('gpu device not set.')
     }
 

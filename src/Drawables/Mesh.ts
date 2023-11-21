@@ -1,5 +1,5 @@
 import { mat4, vec4, Vec4 } from 'wgpu-matrix';
-import { gpu } from "../Gpu";
+import { gpu } from "../Renderer";
 import SurfaceMesh from "./SurfaceMesh";
 import Drawable from './Drawable';
 import { PipelineTypes } from '../Pipelines/PipelineManager';
@@ -18,7 +18,7 @@ class Mesh extends Drawable {
   constructor(mesh: SurfaceMesh, pipelineType: PipelineTypes) {
     super(pipelineType)
   
-    if (!gpu.device) {
+    if (!gpu) {
       throw new Error('device is not set')
     }
 
@@ -75,7 +75,7 @@ class Mesh extends Drawable {
   }
 
   render(passEncoder: GPURenderPassEncoder) {
-    if (!gpu.device) {
+    if (!gpu) {
       throw new Error('gpu devcie not set.')
     }
 

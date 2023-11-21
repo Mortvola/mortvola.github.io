@@ -1,4 +1,4 @@
-import { bindGroups } from "./BindGroups";
+import { bindGroups } from "./Renderer";
 import DrawableInterface from "./Drawables/DrawableInterface";
 import PipelineInterface from "./Pipelines/PipelineInterface";
 

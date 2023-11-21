@@ -1,5 +1,4 @@
-import { bindGroups } from "../BindGroups";
-import { gpu } from "../Gpu";
+import { gpu, bindGroups } from "../Renderer";
 import PipelineInterface from "./PipelineInterface";
 import shader from '../shaders/simple.wgsl';
 import DrawableInterface from "../Drawables/DrawableInterface";
@@ -10,7 +9,7 @@ class Pipeline implements PipelineInterface {
   bindGroupLayouts: GPUBindGroupLayout[] = [];
 
   constructor() {
-    if (!gpu.device) {
+    if (!gpu) {
       throw new Error('device is not set')
     }
 

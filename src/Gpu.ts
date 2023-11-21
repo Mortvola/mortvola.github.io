@@ -1,34 +1,25 @@
 class Gpu {
-  device: GPUDevice | null = null;
+  device: GPUDevice;
 
-  ready: Promise<boolean>
+  constructor(device: GPUDevice) {
+    this.device = device;
+  }
 
-  constructor() {
-    this.ready = new Promise<boolean>((resolve, reject) => {
-      (async () => {
-        if (!navigator.gpu) {
-          reject();
-          throw new Error('gpu not supported');
+  static async create(): Promise<Gpu | null> {
+    if (navigator.gpu) {
+      const adapter = await navigator.gpu.requestAdapter();
+  
+      if (adapter) {  
+        const device = await adapter.requestDevice();
+      
+        if (device) {
+          return new Gpu(device);
         }
-      
-        const adapter = await navigator.gpu.requestAdapter();
-      
-        if (!adapter) {
-          reject();
-          throw new Error('Could not acquire adapater.');
-        }
-      
-        this.device = await adapter.requestDevice();
-      
-        if (!this.device) {
-          reject();
-          throw new Error('Could not acquire device');
-        }
+      }
+    }
 
-        resolve(true);
-      })();
-     })
+    return null;
   }
 }
 
-export const gpu = new Gpu();
+export default Gpu;
