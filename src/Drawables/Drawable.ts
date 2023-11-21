@@ -1,5 +1,5 @@
-import { makeObservable, observable, runInAction } from 'mobx';
-import { mat4, vec3, Mat4 } from 'wgpu-matrix';
+import { makeObservable, observable } from 'mobx';
+import { mat4, vec3, vec4, Mat4, Vec4 } from 'wgpu-matrix';
 import DrawableInterface from "./DrawableInterface";
 import PipelineInterface from '../Pipelines/PipelineInterface';
 import PipelineManager, { PipelineTypes } from '../Pipelines/PipelineManager';
@@ -14,6 +14,8 @@ class Drawable implements DrawableInterface {
   rotate = vec3.create(0, 0, 0);
 
   scale = vec3.create(1, 1, 1);
+
+  tag = '';
 
   constructor(pipelineType: PipelineTypes) {
     const pipeline = PipelineManager.getInstance().getPipeline(pipelineType);
@@ -57,6 +59,14 @@ class Drawable implements DrawableInterface {
 
   render(passEncoder: GPURenderPassEncoder): void {
     throw new Error('render not implemented')
+  }
+
+  hitTest(origin: Vec4, vector: Vec4): { point: Vec4, t: number, drawable: Drawable} | null {
+    return null;
+  }
+
+  computeCentroid(): Vec4 {
+    return vec4.create();
   }
 }
 

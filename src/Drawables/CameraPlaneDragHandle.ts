@@ -107,7 +107,7 @@ class CameraPlaneDragHandle extends Drawable {
     passEncoder.draw(6);  
   }
 
-  hitTest(p: Vec4, viewTransform: Mat4): Vec4 | null {
+  hitTest(p: Vec4, viewTransform: Mat4): { point: Vec4, t: number, drawable: Drawable} | null {
     // Transform point from model space to world space to camera space.
     let t = mat4.multiply(mat4.inverse(viewTransform), this.getTransform());
 
@@ -122,7 +122,7 @@ class CameraPlaneDragHandle extends Drawable {
         // Transform point to world space
         const wp = vec4.transformMat4(p2, viewTransform);
 
-        return wp;
+        return { point: wp, t: 1.0, drawable: this };
       }
     }
 

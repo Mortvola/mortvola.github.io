@@ -4,7 +4,7 @@ import {
 import { runInAction } from 'mobx';
 import { bindGroups } from "./BindGroups";
 import { gpu } from "./Gpu";
-import { degToRad, intersectionPlane, normalizeDegrees } from "./Math";
+import { closestPointBetweenRays, degToRad, intersectionPlane, normalizeDegrees } from "./Math";
 import Mesh from "./Drawables/Mesh";
 import Models from './Models';
 import CartesianAxes from './CartesianAxes';
@@ -33,15 +33,16 @@ setDefaultType(Float32Array);
 
 type HitTestInfo = {
   point : Vec4,
-  mesh: Mesh,
+  mesh: Drawable,
   translate: Vec4,
 }
 
 type DragInfo = {
   point: Vec4,
-  planarNormal: Vec4,
+  planeNormal: Vec4 | null,
+  vector: Vec4 | null,
   objects: {
-    mesh: Mesh,
+    drawable: Drawable,
     translate: Vec4
   }[],
 }
@@ -101,33 +102,53 @@ class Renderer {
 
   cameraPlaneDragHandle: CameraPlaneDragHandle;
 
-  xAxisPlaneDragHandle: Mesh;
-
-  yAxisPlaneDragHandle: Mesh;
-
-  zAxisPlaneDragHandle: Mesh;
+  dragModel: Drawable[] = [];
 
   onSelectCallback: ((drawable: Drawable | null) => void) | null = null;
 
   constructor(cameraPlaneDragHandle: CameraPlaneDragHandle) {
     this.mainRenderPass.addDrawable(new CartesianAxes('line'));
 
-    this.xAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(1, 0, 0)), 'drag-handles');
-    this.xAxisPlaneDragHandle.translate = vec3.create(2, 2, 0);
-    this.dragHandlesPass.addDrawable(this.xAxisPlaneDragHandle);
+    const xAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(1, 0, 0)), 'drag-handles');
+    xAxisPlaneDragHandle.translate = vec3.create(2, 2, 0);
+    xAxisPlaneDragHandle.tag ='drag-x-axis-plane';
 
-    this.yAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 0, 1)), 'drag-handles');
-    this.yAxisPlaneDragHandle.rotate = vec3.create(degToRad(270), 0, 0);
-    this.yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
-    this.dragHandlesPass.addDrawable(this.yAxisPlaneDragHandle);
+    const xAxisDragHandle = new Mesh(cylinder(8, 0.125, vec3.create(1, 0, 0)), 'drag-handles');
+    xAxisDragHandle.rotate = vec3.create(0, 0, degToRad(270));
+    xAxisDragHandle.translate = vec3.create(1, 0, 0);
+    xAxisDragHandle.tag = 'drag-x-axis';
 
-    this.zAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 1, 0)), 'drag-handles');
-    this.zAxisPlaneDragHandle.rotate = vec3.create(0, degToRad(90), 0);
-    this.zAxisPlaneDragHandle.translate = vec3.create(0, 2, 2);
-    this.dragHandlesPass.addDrawable(this.zAxisPlaneDragHandle);
+    const yAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 0, 1)), 'drag-handles');
+    yAxisPlaneDragHandle.rotate = vec3.create(degToRad(270), 0, 0);
+    yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
+    yAxisPlaneDragHandle.tag = 'drag-y-axis-plane';
+
+    const yAxisDragHandle = new Mesh(cylinder(8, 0.125, vec3.create(0, 0, 1)), 'drag-handles');
+    yAxisDragHandle.translate = vec3.create(0, 1, 0);
+    yAxisDragHandle.tag = 'drag-y-axis';
+
+    const zAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 1, 0)), 'drag-handles');
+    zAxisPlaneDragHandle.rotate = vec3.create(0, degToRad(90), 0);
+    zAxisPlaneDragHandle.translate = vec3.create(0, 2, 2);
+    zAxisPlaneDragHandle.tag = 'drag-z-axis-plane';
+
+    const zAxisDragHandle = new Mesh(cylinder(8, 0.125, vec3.create(0, 1, 0)), 'drag-handles');
+    zAxisDragHandle.rotate = vec3.create(degToRad(270), 0, 0);
+    zAxisDragHandle.translate = vec3.create(0, 0, 1);
+    zAxisDragHandle.tag = 'drag-z-axis';
 
     this.cameraPlaneDragHandle = cameraPlaneDragHandle;
-    this.dragHandlesPass.addDrawable(this.cameraPlaneDragHandle)
+    this.cameraPlaneDragHandle.tag = 'drag-camera-plane';
+
+    this.dragModel.push(xAxisPlaneDragHandle)
+    this.dragModel.push(xAxisDragHandle);
+    this.dragModel.push(yAxisPlaneDragHandle)
+    this.dragModel.push(yAxisDragHandle);
+    this.dragModel.push(zAxisPlaneDragHandle)
+    this.dragModel.push(zAxisDragHandle);
+    this.dragModel.push(cameraPlaneDragHandle);
+
+    this.dragHandlesPass.addDrawables(this.dragModel);
 
     this.document.meshes = [];
   }
@@ -364,13 +385,9 @@ class Renderer {
       const mat = mat4.translate(mat4.identity(), centroid);
       mat4.scale(mat, vec3.create(scale, scale, scale), mat)
 
-      this.cameraPlaneDragHandle?.computeTransform(mat);
-
-      this.xAxisPlaneDragHandle?.computeTransform(mat);
-
-      this.yAxisPlaneDragHandle?.computeTransform(mat);
-      
-      this.zAxisPlaneDragHandle?.computeTransform(mat);
+      this.dragModel.forEach((drawable) => {
+        drawable.computeTransform(mat);
+      })
 
       this.dragHandlesPass.render(view, this.depthTextureView!, commandEncoder);
     }
@@ -414,7 +431,7 @@ class Renderer {
     })
   }
 
-  hitTest(x: number, y: number): { point: Vec4, mesh: Mesh} | null {
+  hitTest(x: number, y: number): { point: Vec4, mesh: Drawable} | null {
     if (this.selected.selection.length > 0) {
       // Check for hit test of drag handle in screen space
       const p = this.ndcToCameraSpace(x, y);
@@ -429,10 +446,11 @@ class Renderer {
 
         this.dragInfo = {
           point: intersection!,
-          planarNormal: planeNormal,
+          planeNormal,
+          vector: null,
           objects: this.selected.selection.map((object) => ({
-            mesh: object.mesh,
-            translate: object.mesh.translate,
+            drawable: object.drawable,
+            translate: object.drawable.translate,
           }))
         }
 
@@ -440,60 +458,78 @@ class Renderer {
       }
 
       const { ray, origin } = this.computeHitTestRay(x, y);
+      let best: {
+        drawable: Drawable,
+        t: number,
+        point: Vec3
+      } | null = null;
 
-      // X Plane
-      let result =  this.xAxisPlaneDragHandle?.hitTest(origin, ray);
-
-      if (result) {
-        this.dragInfo = {
-          point: result.point,
-          planarNormal: vec4.create(0, 0, 1, 0),
-          objects: this.selected.selection.map((object) => ({
-            mesh: object.mesh,
-            translate: object.mesh.translate,
-          }))
+      for (let drawable of this.dragModel) {
+        if (drawable.tag !== 'drag-camera-plane' && drawable.tag !== '') {
+          const result = drawable.hitTest(origin, ray)
+    
+          if (result) {
+            if (best === null || result.t < best.t) {
+              best = {
+                drawable: result.drawable,
+                t: result.t,
+                point: result.point,
+              }
+            }
+          }  
         }
-
-        return null;
       }
 
-      // Y plane
-      result =  this.yAxisPlaneDragHandle?.hitTest(origin, ray);
+      if (best !== null) {
+        let planeNormal: Vec4 | null = null;
+        let vector: Vec4 | null = null;
 
-      if (result) {
-        this.dragInfo = {
-          point: result.point,
-          planarNormal: vec4.create(0, 1, 0, 0),
-          objects: this.selected.selection.map((object) => ({
-            mesh: object.mesh,
-            translate: object.mesh.translate,
-          }))
+        switch (best.drawable.tag) {
+          case 'drag-x-axis-plane':
+            planeNormal = vec4.create(0, 0, 1, 0);
+            break;
+
+          case 'drag-x-axis':
+            vector = vec4.create(1, 0, 0, 0);
+            break;
+
+          case 'drag-y-axis-plane':
+            planeNormal = vec4.create(0, 1, 0, 0);
+            break;
+
+          case 'drag-y-axis':
+            vector = vec4.create(0, 1, 0, 0);
+            break;
+
+          case 'drag-z-axis-plane':
+            planeNormal = vec4.create(1, 0, 0, 0);
+            break;
+
+          case 'drag-z-axis':
+            vector = vec4.create(0, 0, 1, 0);
+            break;
         }
 
-        return null;
-      }
+        if (planeNormal || vector) {
+          this.dragInfo = {
+            point: best.point,
+            planeNormal,
+            vector,
+            objects: this.selected.selection.map((object) => ({
+              drawable: object.drawable,
+              translate: object.drawable.translate,
+            }))
+          }  
 
-      // Z Plane
-      result =  this.zAxisPlaneDragHandle?.hitTest(origin, ray);
-
-      if (result) {
-        this.dragInfo = {
-          point: result.point,
-          planarNormal: vec4.create(1, 0, 0, 0),
-          objects: this.selected.selection.map((object) => ({
-            mesh: object.mesh,
-            translate: object.mesh.translate,
-          }))
+          return null;
         }
-
-        return null;
       }
     }
 
     // Check for hits against the other objects
     const { ray, origin } = this.computeHitTestRay(x, y);
     let best: {
-      mesh: Mesh,
+      drawable: Drawable,
       t: number,
       point: Vec3
     } | null = null;
@@ -504,7 +540,7 @@ class Renderer {
       if (result) {
         if (best === null || result.t < best.t) {
           best = {
-            mesh: result.mesh,
+            drawable: result.drawable,
             t: result.t,
             point: result.point,
           }
@@ -515,7 +551,7 @@ class Renderer {
     if (best) {
       return {
         point: best.point,
-        mesh: best.mesh,
+        mesh: best.drawable,
       }
     }
 
@@ -526,14 +562,22 @@ class Renderer {
     if (this.dragInfo) {
       const { ray, origin } = this.computeHitTestRay(x, y);
 
-      let intersection = intersectionPlane(this.dragInfo.point, this.dragInfo.planarNormal, origin, ray);
+      let intersection: Vec4 | null = null;
+
+      if (this.dragInfo.planeNormal) {
+        intersection = intersectionPlane(this.dragInfo.point, this.dragInfo.planeNormal, origin, ray);
+      }
+      else if (this.dragInfo.vector) {
+        const { p1 } = closestPointBetweenRays(this.dragInfo.point, this.dragInfo.vector, origin, ray);
+        intersection = p1;
+      }
 
       if (intersection) {
         let moveVector = vec4.subtract(intersection, this.dragInfo.point);
         this.dragInfo.objects.forEach((object) => {
           // Add the move vector to the original translation for the object.
           runInAction(() => {
-            object.mesh.translate = vec3.add(object.translate, moveVector);
+            object.drawable.translate = vec3.add(object.translate, moveVector);
           })
         })
       }

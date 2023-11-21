@@ -27,6 +27,12 @@ class RenderPass {
     }
   }
 
+  addDrawables(drawable: DrawableInterface[]) {
+    drawable.forEach((drawable) => {
+      this.addDrawable(drawable);
+    })
+  }
+
   getDescriptor(view: GPUTextureView, depthView: GPUTextureView | null): GPURenderPassDescriptor {
     const descriptor: GPURenderPassDescriptor = {
       label: 'main render pass',

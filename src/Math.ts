@@ -77,3 +77,35 @@ export const pointRayDistance = (origin: Vec4, ray: Vec4, point: Vec4) => {
   // ray is ca in forumla above
   return vec3.length(vec3.cross(ba, ray));
 }
+
+// Find the closest points between two rays.
+// The derivation of the forumula is based on:
+// Q1 = A1 + t1*B1
+// Q2 = A2 + t2*B2
+// where A1 and A2 are the origins of the rays and B1 and B2 are the directions of the rays
+//
+// The vector between the closest points:
+// v = Q1 - Q1 = A1 + t1 * B1 - A2 - t2 * B2
+//
+// The vector will be orthoganol to the rays thus:
+// v dot B1 = 0
+// v dot B2 = 0
+//
+export const closestPointBetweenRays = (originA: Vec4, rayA: Vec4, originB: Vec4, rayB: Vec4) => {
+  const a = vec3.dot(rayA, rayA);
+  const b = vec3.dot(rayA, rayB);
+  const c = vec3.dot(rayB, rayB);
+
+  const d = vec3.dot(originA, rayA);
+  const e = vec3.dot(originA, rayB);
+  const f = vec3.dot(originB, rayA);
+  const g = vec3.dot(originB, rayB);
+
+  const t1 = (c * (f - d) + b * (e - g)) / (a * c - b * b);
+  const p1 = vec4.add(originA, vec4.mulScalar(rayA, t1))
+
+  const t2 = (b * (f - d) + a * (e - g)) / (a * c - b * b);
+  const p2 = vec4.add(originB, vec4.mulScalar(rayB, t2))
+
+  return {p1, p2};
+}

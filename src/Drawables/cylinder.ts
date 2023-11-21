@@ -1,12 +1,13 @@
+import { Vec3 } from 'wgpu-matrix';
 import Point from "./Point";
 import SurfaceMesh from "./SurfaceMesh";
 
-export const cylinder = (numSlices: number) => {
+export const cylinder = (numSlices: number, radius = 1, color?: Vec3) => {
   const mesh = new SurfaceMesh();
   const numStacks = 3;
 
   // add top vertex
-  const v0 = mesh.addVertex(new Point(0, 1, 0));
+  const v0 = mesh.addVertex(new Point(0, 1, 0), color);
 
   // generate vertices per stack / slice
   for (let i = 0; i < numStacks - 1; i++)
@@ -15,16 +16,16 @@ export const cylinder = (numSlices: number) => {
     for (let j = 0; j < numSlices; j++)
     {
       const theta = 2.0 * Math.PI * j / numSlices;
-      const x = Math.sin(phi) * Math.cos(theta);
+      const x = Math.sin(phi) * Math.cos(theta) * radius;
       const y = 1 - 2 * i;
-      const z = Math.sin(phi) * Math.sin(theta);
+      const z = Math.sin(phi) * Math.sin(theta) * radius;
 
-      mesh.addVertex(new Point(x, y, z));
+      mesh.addVertex(new Point(x, y, z), color);
     }
   }
 
   // add bottom vertex
-  const v1 = mesh.addVertex(new Point(0, -1, 0));
+  const v1 = mesh.addVertex(new Point(0, -1, 0), color);
 
   // add top / bottom triangles
   for (let i = 0; i < numSlices; ++i)

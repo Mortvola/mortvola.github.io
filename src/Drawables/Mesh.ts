@@ -88,7 +88,7 @@ class Mesh extends Drawable {
     passEncoder.drawIndexed(this.mesh.indexes.length);  
   }
 
-  hitTest(origin: Vec4, vector: Vec4): { point: Vec4, t: number, mesh: Mesh} | null {
+  hitTest(origin: Vec4, vector: Vec4): { point: Vec4, t: number, drawable: Drawable} | null {
     const inverseTransform = mat4.inverse(this.getTransform());
 
     const localVector = vec4.transformMat4(vector, inverseTransform);
@@ -100,7 +100,7 @@ class Mesh extends Drawable {
       // Convert the intersection point into world coordinates.
       const point = vec4.transformMat4(result.point, this.getTransform());
 
-      return { point, t: result.t, mesh: this };      
+      return { point, t: result.t, drawable: this };      
     }
 
     return null;
