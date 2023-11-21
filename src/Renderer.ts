@@ -119,6 +119,12 @@ class Renderer {
     xAxisDragHandle.translate = vec3.create(1, 0, 0);
     xAxisDragHandle.tag = 'drag-x-axis';
 
+    const xConeHandle = new Mesh(cone(8, 1, vec3.create(1, 0, 0)), 'drag-handles')
+    xConeHandle.rotate = vec3.create(0, 0, degToRad(270));
+    xConeHandle.translate = vec3.create(2, 0, 0);
+    xConeHandle.scale = vec3.create(0.25, 0.25, 0.25)
+    xConeHandle.tag = 'drag-x-axis';
+
     const yAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 0, 1)), 'drag-handles');
     yAxisPlaneDragHandle.rotate = vec3.create(degToRad(270), 0, 0);
     yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
@@ -127,6 +133,11 @@ class Renderer {
     const yAxisDragHandle = new Mesh(cylinder(8, 0.125, vec3.create(0, 0, 1)), 'drag-handles');
     yAxisDragHandle.translate = vec3.create(0, 1, 0);
     yAxisDragHandle.tag = 'drag-y-axis';
+
+    const yConeHandle = new Mesh(cone(8, 1, vec3.create(0, 0, 1)), 'drag-handles')
+    yConeHandle.translate = vec3.create(0, 2, 0);
+    yConeHandle.scale = vec3.create(0.25, 0.25, 0.25)
+    yConeHandle.tag = 'drag-y-axis';
 
     const zAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 1, 0)), 'drag-handles');
     zAxisPlaneDragHandle.rotate = vec3.create(0, degToRad(90), 0);
@@ -138,15 +149,25 @@ class Renderer {
     zAxisDragHandle.translate = vec3.create(0, 0, 1);
     zAxisDragHandle.tag = 'drag-z-axis';
 
+    const zConeHandle = new Mesh(cone(8, 1, vec3.create(0, 1, 0)), 'drag-handles')
+    zConeHandle.rotate = vec3.create(degToRad(90), 0, 0);
+    zConeHandle.translate = vec3.create(0, 0, 2);
+    zConeHandle.scale = vec3.create(0.25, 0.25, 0.25)
+    zConeHandle.tag = 'drag-z-axis';
+
+
     this.cameraPlaneDragHandle = cameraPlaneDragHandle;
     this.cameraPlaneDragHandle.tag = 'drag-camera-plane';
 
     this.dragModel.push(xAxisPlaneDragHandle)
     this.dragModel.push(xAxisDragHandle);
+    this.dragModel.push(xConeHandle);
     this.dragModel.push(yAxisPlaneDragHandle)
     this.dragModel.push(yAxisDragHandle);
+    this.dragModel.push(yConeHandle);
     this.dragModel.push(zAxisPlaneDragHandle)
     this.dragModel.push(zAxisDragHandle);
+    this.dragModel.push(zConeHandle);
     this.dragModel.push(cameraPlaneDragHandle);
 
     this.dragHandlesPass.addDrawables(this.dragModel);
