@@ -18,8 +18,9 @@ import CameraPlaneDragHandle from './Drawables/CameraPlaneDragHandle';
 import { plane } from './Drawables/plane';
 import Drawable from './Drawables/Drawable';
 import { cylinder } from './Drawables/cylinder';
+import { cone } from './Drawables/cone';
 
-export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron' | 'Cylinder';
+export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron' | 'Cylinder' | 'Cone';
 
 const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
   requestAnimationFrame((timestamp: number) => {
@@ -209,6 +210,9 @@ class Renderer {
         break;
       case 'Cylinder':
         mesh = new Mesh(cylinder(8), 'pipeline');
+        break;
+      case 'Cone':
+        mesh = new Mesh(cone(8), 'pipeline');
         break;
       default:
         throw new Error('invalid type')
