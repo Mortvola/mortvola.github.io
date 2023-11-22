@@ -227,7 +227,7 @@ class Renderer {
     let mesh: Mesh;
     switch (type) {
       case 'Box':
-        mesh = new Mesh(box(8, 8), 'pipeline');
+        mesh = new Mesh(box(2, 2, 2), 'pipeline');
         break;
       case 'UVSphere':
         mesh = new Mesh(uvSphere(8, 8), 'pipeline');
@@ -605,16 +605,13 @@ class Renderer {
         const { p1 } = closestPointBetweenRays(this.dragInfo.point, this.dragInfo.vector, origin, ray);
         intersection = p1;
 
-        // console.log(this.dragInfo.centroid)
         const distance = vec3.distance(intersection, this.dragInfo.centroid);
-
-        console.log(`distance: ${distance}, initial: ${this.dragInfo.initialDistance}`);
-
         scale = distance / this.dragInfo.initialDistance;
       }
 
       if (intersection) {
         let moveVector = vec4.subtract(intersection, this.dragInfo.point);
+
         this.dragInfo.objects.forEach((object) => {
           // Add the move vector to the original translation for the object.
           runInAction(() => {
@@ -623,17 +620,50 @@ class Renderer {
                 object.drawable.translate = vec3.add(object.translate, moveVector);
                 break;
 
-              case 'ScaleX':
-                object.drawable.scale = vec3.multiply(object.scale, vec3.create(scale, 1, 1));
-                break;
+              case 'ScaleX': {
+                const s = mat4.multiply(mat4.identity(), mat4.inverse(object.drawable.getRotation()));
+                mat4.scale(s, vec3.create(scale, 1, 1), s);
+                mat4.multiply(s, object.drawable.getRotation(), s);
+                mat4.scale(s, object.scale, s);
 
-              case 'ScaleY':
-                object.drawable.scale = vec3.multiply(object.scale, vec3.create(1, scale, 1));
-                break;
+                object.drawable.scale = vec3.create(
+                  Math.abs(parseFloat(s[0].toFixed(4))),
+                  Math.abs(parseFloat(s[5].toFixed(4))),
+                  Math.abs(parseFloat(s[10].toFixed(4))),
+                );
 
-              case 'ScaleZ':
-                object.drawable.scale = vec3.multiply(object.scale, vec3.create(1, 1, scale));
                 break;
+              }
+
+              case 'ScaleY': {
+                const s = mat4.multiply(mat4.identity(), mat4.inverse(object.drawable.getRotation()));
+                mat4.scale(s, vec3.create(1, scale, 1), s);
+                mat4.multiply(s, object.drawable.getRotation(), s);
+                mat4.scale(s, object.scale, s);
+
+                object.drawable.scale = vec3.create(
+                  Math.abs(parseFloat(s[0].toFixed(4))),
+                  Math.abs(parseFloat(s[5].toFixed(4))),
+                  Math.abs(parseFloat(s[10].toFixed(4))),
+                );
+
+                break;
+              }
+
+              case 'ScaleZ': {
+                const s = mat4.multiply(mat4.identity(), mat4.inverse(object.drawable.getRotation()));
+                mat4.scale(s, vec3.create(1, 1, scale), s);
+                mat4.multiply(s, object.drawable.getRotation(), s);
+                mat4.scale(s, object.scale, s);
+
+                object.drawable.scale = vec3.create(
+                  Math.abs(parseFloat(s[0].toFixed(4))),
+                  Math.abs(parseFloat(s[5].toFixed(4))),
+                  Math.abs(parseFloat(s[10].toFixed(4))),
+                );
+
+                break;
+              }
       
               default:
                 break;

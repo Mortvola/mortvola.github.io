@@ -13,6 +13,16 @@ class SceneNode {
     return this.transform
   }
 
+  getRotation(): Mat4 {
+    const transform = mat4.identity();
+
+    mat4.rotateX(transform, this.rotate[0], transform);
+    mat4.rotateY(transform, this.rotate[1], transform);
+    mat4.rotateZ(transform, this.rotate[2], transform);
+
+    return transform;
+  }
+
   computeTransform(transform?: Mat4, prepend = true): Mat4 {
     this.transform = mat4.identity();
 
@@ -21,9 +31,7 @@ class SceneNode {
     }
 
     mat4.translate(this.transform, this.translate, this.transform);
-    mat4.rotateX(this.transform, this.rotate[0], this.transform);
-    mat4.rotateY(this.transform, this.rotate[1], this.transform);
-    mat4.rotateZ(this.transform, this.rotate[2], this.transform);
+    mat4.multiply(this.transform, this.getRotation(), this.transform);
     mat4.scale(this.transform, this.scale, this.transform);
 
     if (!prepend && transform) {
