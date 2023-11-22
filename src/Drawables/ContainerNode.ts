@@ -1,7 +1,6 @@
 import { Vec4, Mat4 } from 'wgpu-matrix';
 import DrawableInterface, { isDrawableInterface } from "./DrawableInterface";
 import SceneNode from "./SceneNode";
-import SceneNodeInterface from "./SceneNodeInterface";
 
 export type HitTestResult = {
   drawable: DrawableInterface,
@@ -10,7 +9,7 @@ export type HitTestResult = {
 }
 
 class ContainerNode extends SceneNode {
-  nodes: SceneNodeInterface[] = [];
+  nodes: SceneNode[] = [];
 
   updateTransforms(mat: Mat4) {
     this.nodes.forEach((drawable) => {

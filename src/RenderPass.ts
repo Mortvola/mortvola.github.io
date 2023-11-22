@@ -1,8 +1,8 @@
 import { bindGroups } from "./Renderer";
 import DrawableInterface, { isDrawableInterface } from "./Drawables/DrawableInterface";
 import PipelineInterface from "./Pipelines/PipelineInterface";
-import SceneNodeInterface from "./Drawables/SceneNodeInterface";
 import ContainerNode, { isContainerNode } from "./Drawables/ContainerNode";
+import SceneNode from "./Drawables/SceneNode";
 
 type PipelineEntry = {
   pipeline: PipelineInterface,
@@ -12,7 +12,7 @@ type PipelineEntry = {
 class RenderPass {
   pipelines: PipelineEntry[] = [];
 
-  addDrawable(drawable: SceneNodeInterface) {
+  addDrawable(drawable: SceneNode) {
     if (isDrawableInterface(drawable)) {
       let pipelineEntry = this.pipelines.find((p) => p.pipeline === drawable.pipeline) ?? null;
 

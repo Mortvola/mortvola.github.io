@@ -19,10 +19,7 @@ import { plane } from './Drawables/plane';
 import Drawable from './Drawables/Drawable';
 import { cylinder } from './Drawables/cylinder';
 import { cone } from './Drawables/cone';
-import SceneNodeInterface from './Drawables/SceneNodeInterface';
-import DrawableInterface, { isDrawableInterface } from './Drawables/DrawableInterface';
-import SceneNode from './Drawables/SceneNode';
-import ContainerNode, { isContainerNode } from './Drawables/ContainerNode';
+import ContainerNode from './Drawables/ContainerNode';
 
 export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron' | 'Cylinder' | 'Cone';
 

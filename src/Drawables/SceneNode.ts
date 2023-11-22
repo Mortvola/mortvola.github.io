@@ -1,7 +1,6 @@
 import { mat4, vec3, Mat4 } from 'wgpu-matrix';
-import SceneNodeInterface from './SceneNodeInterface';
 
-class SceneNode implements SceneNodeInterface {
+class SceneNode {
   transform = mat4.identity();
 
   translate = vec3.create(0, 0, 0);
