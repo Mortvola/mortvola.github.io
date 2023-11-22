@@ -5,23 +5,25 @@ import ValueInput from './ValueInput';
 
 type PropsType = {
   values: Vec3,
+  degrees?: boolean,
 }
 
 const ValuesInput: React.FC<PropsType> = observer(({
   values,
+  degrees = false,
 }) => (
   <div className="values">
     <label>
       X:
-      <ValueInput values={values} index={0} />
+      <ValueInput values={values} index={0} degrees={degrees} />
     </label>
     <label>
       Y:
-      <ValueInput values={values} index={1} />
+      <ValueInput values={values} index={1} degrees={degrees} />
     </label>
     <label>
       Z:
-      <ValueInput values={values} index={2} />
+      <ValueInput values={values} index={2} degrees={degrees} />
     </label>
   </div>
 ))

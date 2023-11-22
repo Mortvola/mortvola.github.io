@@ -20,7 +20,7 @@ const Transformations: React.FC<PropsType> = observer(({
         <div className="title">
           Rotation:
         </div>
-        <ValuesInput values={drawable.rotate} />
+        <ValuesInput values={drawable.rotate} degrees={true} />
         <div className="title">
           Scale:
         </div>

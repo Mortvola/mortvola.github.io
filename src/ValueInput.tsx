@@ -7,11 +7,13 @@ import { degToRad, radToDeg } from './Math';
 type PropsType = {
   values: Vec3,
   index: number,
+  degrees?: boolean,
 }
 
 const ValueInput: React.FC<PropsType> = observer(({
   values,
   index,
+  degrees = false,
 }) => {
   const [edit, setEdit] = React.useState<boolean>(false);
   const [editValue, setEditValue] = React.useState<string>('0');
@@ -19,12 +21,22 @@ const ValueInput: React.FC<PropsType> = observer(({
   const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     setEditValue(event.target.value)
     runInAction(() => {
-      values[index] = degToRad(parseFloat(event.target.value ?? 0));
+      if (degrees) {
+        values[index] = degToRad(parseFloat(event.target.value ?? 0));
+      }
+      else {
+        values[index] = parseFloat(event.target.value ?? 0);
+      }
     })
   }
 
   const handleFocus: React.FocusEventHandler<HTMLInputElement> = () => {
-    setEditValue(radToDeg(values[index]).toString())
+    if (degrees) {
+      setEditValue(radToDeg(values[index]).toString())
+    }
+    else {
+      setEditValue(values[index].toString())
+    }
     setEdit(true);
   }
 
@@ -36,8 +48,13 @@ const ValueInput: React.FC<PropsType> = observer(({
     <>
       {
         edit
-          ? <input type="text" value={editValue} onChange={handleChange} onBlur={handleBlur}></input>
-          : <input type="text" value={radToDeg(values[index])} onChange={handleChange} onFocus={handleFocus}></input>
+          ? <input type="text" value={editValue} onChange={handleChange} onBlur={handleBlur} />
+          : <input
+            type="text"
+            value={degrees ? radToDeg(values[index]) : values[index]}
+            onChange={handleChange}
+            onFocus={handleFocus}
+          />
       }
     </>
   )
