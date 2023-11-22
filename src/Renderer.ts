@@ -158,9 +158,8 @@ class Renderer {
     yAxisDragHandle.translate = vec3.create(0, 1, 0);
     yAxisDragHandle.tag = tag;
 
-    const yConeHandle = new Mesh(cone(8, 1, color), 'drag-handles')
+    const yConeHandle = new Mesh(cone(8, 0.5, 0.25, color), 'drag-handles')
     yConeHandle.translate = vec3.create(0, 2, 0);
-    yConeHandle.scale = vec3.create(0.25, 0.25, 0.25)
     yConeHandle.tag = tag;
 
     node.nodes.push(yAxisDragHandle);
