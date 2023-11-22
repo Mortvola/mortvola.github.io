@@ -1,6 +1,7 @@
 import { vec3, vec4, Vec3, Vec4 } from "wgpu-matrix";
 
 export const degToRad = (d: number) => d * Math.PI / 180;
+export const radToDeg = (r: number) => (r /  Math.PI) * 180;
 
 export const normalizeDegrees = (d: number) => {
   let normalized = d % 360;
