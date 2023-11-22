@@ -39,13 +39,19 @@ type HitTestInfo = {
   translate: Vec4,
 }
 
+type DragMode = 'Translate' | 'ScaleAll' | 'ScaleX' | 'ScaleY' | 'ScaleZ';
+
 type DragInfo = {
+  mode: DragMode,
   point: Vec4,
   planeNormal: Vec4 | null,
   vector: Vec4 | null,
+  centroid: Vec4,
+  initialDistance: number,
   objects: {
     drawable: Drawable,
-    translate: Vec4
+    translate: Vec3,
+    scale: Vec3,
   }[],
 }
 
@@ -111,26 +117,28 @@ class Renderer {
   constructor(cameraPlaneDragHandle: CameraPlaneDragHandle) {
     this.mainRenderPass.addDrawable(new CartesianAxes('line'));
 
-    const xAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(1, 0, 0)), 'drag-handles');
+    const planeHandleDimension = 0.75;
+
+    const xAxisPlaneDragHandle = new Mesh(plane(planeHandleDimension, planeHandleDimension, vec3.create(0, 1, 0)), 'drag-handles');
     xAxisPlaneDragHandle.translate = vec3.create(2, 2, 0);
     xAxisPlaneDragHandle.tag ='drag-x-axis-plane';
 
-    const xAxis = this.createAxis('drag-x-axis', vec3.create(1, 0, 0));
+    const xAxis = this.createAxis('x-axis', vec3.create(1, 0, 0));
     xAxis.rotate = vec3.create(0, 0, degToRad(270));
 
-    const yAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 0, 1)), 'drag-handles');
+    const yAxisPlaneDragHandle = new Mesh(plane(planeHandleDimension, planeHandleDimension, vec3.create(0, 0, 1)), 'drag-handles');
     yAxisPlaneDragHandle.rotate = vec3.create(degToRad(270), 0, 0);
     yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
     yAxisPlaneDragHandle.tag = 'drag-y-axis-plane';
 
-    const yAxis = this.createAxis('drag-y-axis', vec3.create(0, 0, 1));
+    const yAxis = this.createAxis('y-axis', vec3.create(0, 0, 1));
 
-    const zAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 1, 0)), 'drag-handles');
+    const zAxisPlaneDragHandle = new Mesh(plane(planeHandleDimension, planeHandleDimension, vec3.create(1, 0, 0)), 'drag-handles');
     zAxisPlaneDragHandle.rotate = vec3.create(0, degToRad(90), 0);
     zAxisPlaneDragHandle.translate = vec3.create(0, 2, 2);
     zAxisPlaneDragHandle.tag = 'drag-z-axis-plane';
 
-    const zAxis = this.createAxis('drag-z-axis', vec3.create(0, 1, 0));
+    const zAxis = this.createAxis('z-axis', vec3.create(0, 1, 0));
     zAxis.rotate = vec3.create(degToRad(90), 0, 0);
 
     this.cameraPlaneDragHandle = cameraPlaneDragHandle;
@@ -154,16 +162,21 @@ class Renderer {
   createAxis(tag: string, color: Vec3): ContainerNode {
     const node = new ContainerNode();
 
-    const yAxisDragHandle = new Mesh(cylinder(8, 0.125, color), 'drag-handles');
-    yAxisDragHandle.translate = vec3.create(0, 1, 0);
-    yAxisDragHandle.tag = tag;
+    const axisDragHandle = new Mesh(cylinder(8, 0.0625, color), 'drag-handles');
+    axisDragHandle.translate = vec3.create(0, 1, 0);
+    axisDragHandle.tag = `scale-${tag}`;
 
-    const yConeHandle = new Mesh(cone(8, 0.5, 0.25, color), 'drag-handles')
-    yConeHandle.translate = vec3.create(0, 2, 0);
-    yConeHandle.tag = tag;
+    const boxHandle = new Mesh(box(0.35, 0.35, 0.35, color), 'drag-handles');
+    boxHandle.translate = vec3.create(0, 2, 0);
+    boxHandle.tag = `scale-${tag}`;
 
-    node.nodes.push(yAxisDragHandle);
-    node.nodes.push(yConeHandle);
+    const coneHandle = new Mesh(cone(8, 0.75, 0.20, color), 'drag-handles')
+    coneHandle.translate = vec3.create(0, 3, 0);
+    coneHandle.tag = `drag-${tag}`;
+
+    node.nodes.push(axisDragHandle);
+    node.nodes.push(boxHandle);
+    node.nodes.push(coneHandle);
 
     return node;
   }
@@ -461,12 +474,16 @@ class Renderer {
         const intersection = intersectionPlane(this.selected.getCentroid(), planeNormal, origin, ray);
 
         this.dragInfo = {
+          mode: 'Translate',
           point: intersection!,
           planeNormal,
           vector: null,
+          centroid: this.selected.getCentroid(),
+          initialDistance: vec3.distance(this.selected.getCentroid(), intersection!),
           objects: this.selected.selection.map((object) => ({
             drawable: object.drawable,
             translate: object.drawable.translate,
+            scale: object.drawable.scale,
           }))
         }
 
@@ -479,6 +496,7 @@ class Renderer {
       if (best !== null) {
         let planeNormal: Vec4 | null = null;
         let vector: Vec4 | null = null;
+        let mode: DragMode = 'Translate';
 
         switch (best.drawable.tag) {
           case 'drag-x-axis-plane':
@@ -486,6 +504,11 @@ class Renderer {
             break;
 
           case 'drag-x-axis':
+            vector = vec4.create(1, 0, 0, 0);
+            break;
+
+          case 'scale-x-axis':
+            mode = 'ScaleX';
             vector = vec4.create(1, 0, 0, 0);
             break;
 
@@ -497,6 +520,11 @@ class Renderer {
             vector = vec4.create(0, 1, 0, 0);
             break;
 
+          case 'scale-y-axis':
+            mode = 'ScaleY';
+            vector = vec4.create(0, 1, 0, 0);
+            break;
+
           case 'drag-z-axis-plane':
             planeNormal = vec4.create(1, 0, 0, 0);
             break;
@@ -504,16 +532,25 @@ class Renderer {
           case 'drag-z-axis':
             vector = vec4.create(0, 0, 1, 0);
             break;
+
+          case 'scale-z-axis':
+            mode = 'ScaleZ';
+            vector = vec4.create(0, 0, 1, 0);
+            break;
         }
 
         if (planeNormal || vector) {
           this.dragInfo = {
+            mode,
             point: best.point,
             planeNormal,
             vector,
+            centroid: this.selected.getCentroid(),
+            initialDistance: vec3.distance(this.selected.getCentroid(), best.point),
             objects: this.selected.selection.map((object) => ({
               drawable: object.drawable,
               translate: object.drawable.translate,
+              scale: object.drawable.scale,
             }))
           }  
 
@@ -559,6 +596,7 @@ class Renderer {
       const { ray, origin } = this.computeHitTestRay(x, y);
 
       let intersection: Vec4 | null = null;
+      let scale = 1;
 
       if (this.dragInfo.planeNormal) {
         intersection = intersectionPlane(this.dragInfo.point, this.dragInfo.planeNormal, origin, ray);
@@ -566,6 +604,13 @@ class Renderer {
       else if (this.dragInfo.vector) {
         const { p1 } = closestPointBetweenRays(this.dragInfo.point, this.dragInfo.vector, origin, ray);
         intersection = p1;
+
+        // console.log(this.dragInfo.centroid)
+        const distance = vec3.distance(intersection, this.dragInfo.centroid);
+
+        console.log(`distance: ${distance}, initial: ${this.dragInfo.initialDistance}`);
+
+        scale = distance / this.dragInfo.initialDistance;
       }
 
       if (intersection) {
@@ -573,7 +618,26 @@ class Renderer {
         this.dragInfo.objects.forEach((object) => {
           // Add the move vector to the original translation for the object.
           runInAction(() => {
-            object.drawable.translate = vec3.add(object.translate, moveVector);
+            switch (this.dragInfo?.mode) {
+              case 'Translate':
+                object.drawable.translate = vec3.add(object.translate, moveVector);
+                break;
+
+              case 'ScaleX':
+                object.drawable.scale = vec3.multiply(object.scale, vec3.create(scale, 1, 1));
+                break;
+
+              case 'ScaleY':
+                object.drawable.scale = vec3.multiply(object.scale, vec3.create(1, scale, 1));
+                break;
+
+              case 'ScaleZ':
+                object.drawable.scale = vec3.multiply(object.scale, vec3.create(1, 1, scale));
+                break;
+      
+              default:
+                break;
+            }
           })
         })
       }

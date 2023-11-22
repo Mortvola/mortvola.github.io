@@ -1,18 +1,23 @@
 import Point from "./Point";
+import { Vec3 } from 'wgpu-matrix';
 import SurfaceMesh from "./SurfaceMesh";
 
-export const box = (numSlices: number, numStacks: number) => {
+export const box = (width = 2, height = 2, depth = 2, color?: Vec3) => {
   const mesh = new SurfaceMesh();
 
-  mesh.addVertex(new Point(-1, 1, 1));
-  mesh.addVertex(new Point(-1, -1, 1));
-  mesh.addVertex(new Point(1, -1, 1));
-  mesh.addVertex(new Point(1, 1, 1));
+  const x = width / 2;
+  const y = height / 2;
+  const z = depth / 2;
 
-  mesh.addVertex(new Point(1, 1, -1));
-  mesh.addVertex(new Point(1, -1, -1));
-  mesh.addVertex(new Point(-1, -1, -1));
-  mesh.addVertex(new Point(-1, 1, -1));
+  mesh.addVertex(new Point(-x, y, z), color);
+  mesh.addVertex(new Point(-x, -y, z), color);
+  mesh.addVertex(new Point(x, -y, z), color);
+  mesh.addVertex(new Point(x, y, z), color);
+
+  mesh.addVertex(new Point(x, y, -z), color);
+  mesh.addVertex(new Point(x, -y, -z), color);
+  mesh.addVertex(new Point(-x, -y, -z), color);
+  mesh.addVertex(new Point(-x, y, -z), color);
 
   mesh.addQuad(0, 1, 2, 3); // front
   mesh.addQuad(4, 5, 6, 7); // back
