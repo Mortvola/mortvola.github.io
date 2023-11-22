@@ -19,6 +19,10 @@ import { plane } from './Drawables/plane';
 import Drawable from './Drawables/Drawable';
 import { cylinder } from './Drawables/cylinder';
 import { cone } from './Drawables/cone';
+import SceneNodeInterface from './Drawables/SceneNodeInterface';
+import DrawableInterface, { isDrawableInterface } from './Drawables/DrawableInterface';
+import SceneNode from './Drawables/SceneNode';
+import ContainerNode, { isContainerNode } from './Drawables/ContainerNode';
 
 export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron' | 'Cylinder' | 'Cone';
 
@@ -47,6 +51,13 @@ type DragInfo = {
     translate: Vec4
   }[],
 }
+
+type HitTestResult = {
+  drawable: DrawableInterface,
+  t: number,
+  point: Vec4,
+}
+
 
 export type ProjectionType = 'Perspective' | 'Orthographic';
 
@@ -103,7 +114,7 @@ class Renderer {
 
   cameraPlaneDragHandle: CameraPlaneDragHandle;
 
-  dragModel: Drawable[] = [];
+  dragModel: ContainerNode;
 
   onSelectCallback: ((drawable: Drawable | null) => void) | null = null;
 
@@ -114,65 +125,58 @@ class Renderer {
     xAxisPlaneDragHandle.translate = vec3.create(2, 2, 0);
     xAxisPlaneDragHandle.tag ='drag-x-axis-plane';
 
-    const xAxisDragHandle = new Mesh(cylinder(8, 0.125, vec3.create(1, 0, 0)), 'drag-handles');
-    xAxisDragHandle.rotate = vec3.create(0, 0, degToRad(270));
-    xAxisDragHandle.translate = vec3.create(1, 0, 0);
-    xAxisDragHandle.tag = 'drag-x-axis';
-
-    const xConeHandle = new Mesh(cone(8, 1, vec3.create(1, 0, 0)), 'drag-handles')
-    xConeHandle.rotate = vec3.create(0, 0, degToRad(270));
-    xConeHandle.translate = vec3.create(2, 0, 0);
-    xConeHandle.scale = vec3.create(0.25, 0.25, 0.25)
-    xConeHandle.tag = 'drag-x-axis';
+    const xAxis = this.createAxis('drag-x-axis', vec3.create(1, 0, 0));
+    xAxis.rotate = vec3.create(0, 0, degToRad(270));
 
     const yAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 0, 1)), 'drag-handles');
     yAxisPlaneDragHandle.rotate = vec3.create(degToRad(270), 0, 0);
     yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
     yAxisPlaneDragHandle.tag = 'drag-y-axis-plane';
 
-    const yAxisDragHandle = new Mesh(cylinder(8, 0.125, vec3.create(0, 0, 1)), 'drag-handles');
-    yAxisDragHandle.translate = vec3.create(0, 1, 0);
-    yAxisDragHandle.tag = 'drag-y-axis';
-
-    const yConeHandle = new Mesh(cone(8, 1, vec3.create(0, 0, 1)), 'drag-handles')
-    yConeHandle.translate = vec3.create(0, 2, 0);
-    yConeHandle.scale = vec3.create(0.25, 0.25, 0.25)
-    yConeHandle.tag = 'drag-y-axis';
+    const yAxis = this.createAxis('drag-y-axis', vec3.create(0, 0, 1));
 
     const zAxisPlaneDragHandle = new Mesh(plane(1, 1, vec3.create(0, 1, 0)), 'drag-handles');
     zAxisPlaneDragHandle.rotate = vec3.create(0, degToRad(90), 0);
     zAxisPlaneDragHandle.translate = vec3.create(0, 2, 2);
     zAxisPlaneDragHandle.tag = 'drag-z-axis-plane';
 
-    const zAxisDragHandle = new Mesh(cylinder(8, 0.125, vec3.create(0, 1, 0)), 'drag-handles');
-    zAxisDragHandle.rotate = vec3.create(degToRad(270), 0, 0);
-    zAxisDragHandle.translate = vec3.create(0, 0, 1);
-    zAxisDragHandle.tag = 'drag-z-axis';
-
-    const zConeHandle = new Mesh(cone(8, 1, vec3.create(0, 1, 0)), 'drag-handles')
-    zConeHandle.rotate = vec3.create(degToRad(90), 0, 0);
-    zConeHandle.translate = vec3.create(0, 0, 2);
-    zConeHandle.scale = vec3.create(0.25, 0.25, 0.25)
-    zConeHandle.tag = 'drag-z-axis';
-
+    const zAxis = this.createAxis('drag-z-axis', vec3.create(0, 1, 0));
+    zAxis.rotate = vec3.create(degToRad(90), 0, 0);
 
     this.cameraPlaneDragHandle = cameraPlaneDragHandle;
     this.cameraPlaneDragHandle.tag = 'drag-camera-plane';
 
-    this.dragModel.push(xAxisPlaneDragHandle)
-    this.dragModel.push(xAxisDragHandle);
-    this.dragModel.push(xConeHandle);
-    this.dragModel.push(yAxisPlaneDragHandle)
-    this.dragModel.push(yAxisDragHandle);
-    this.dragModel.push(yConeHandle);
-    this.dragModel.push(zAxisPlaneDragHandle)
-    this.dragModel.push(zAxisDragHandle);
-    this.dragModel.push(zConeHandle);
-    this.dragModel.push(cameraPlaneDragHandle);
+    this.dragModel = new ContainerNode();
+
+    this.dragModel.nodes.push(xAxisPlaneDragHandle)
+    this.dragModel.nodes.push(yAxisPlaneDragHandle)
+    this.dragModel.nodes.push(zAxisPlaneDragHandle)
+    this.dragModel.nodes.push(xAxis);
+    this.dragModel.nodes.push(yAxis);
+    this.dragModel.nodes.push(zAxis);
+    this.dragModel.nodes.push(cameraPlaneDragHandle);
 
     this.dragHandlesPass.addDrawables(this.dragModel);
 
     this.document.meshes = [];
+  }
+
+  createAxis(tag: string, color: Vec3): ContainerNode {
+    const node = new ContainerNode();
+
+    const yAxisDragHandle = new Mesh(cylinder(8, 0.125, color), 'drag-handles');
+    yAxisDragHandle.translate = vec3.create(0, 1, 0);
+    yAxisDragHandle.tag = tag;
+
+    const yConeHandle = new Mesh(cone(8, 1, color), 'drag-handles')
+    yConeHandle.translate = vec3.create(0, 2, 0);
+    yConeHandle.scale = vec3.create(0.25, 0.25, 0.25)
+    yConeHandle.tag = tag;
+
+    node.nodes.push(yAxisDragHandle);
+    node.nodes.push(yConeHandle);
+
+    return node;
   }
 
   static async create() {
@@ -410,14 +414,24 @@ class Renderer {
       const mat = mat4.translate(mat4.identity(), centroid);
       mat4.scale(mat, vec3.create(scale, scale, scale), mat)
 
-      this.dragModel.forEach((drawable) => {
-        drawable.computeTransform(mat);
-      })
+      this.updateTransforms(this.dragModel, mat)
 
       this.dragHandlesPass.render(view, this.depthTextureView!, commandEncoder);
     }
   
     gpu.device.queue.submit([commandEncoder.finish()]);  
+  }
+
+  updateTransforms(node: ContainerNode, mat: Mat4) {
+    node.nodes.forEach((drawable) => {
+      if (isDrawableInterface(drawable)) {
+        drawable.computeTransform(mat);
+      }
+      else if (isContainerNode(drawable)) {
+        const nodeMat = drawable.computeTransform(mat);
+        this.updateTransforms(drawable, nodeMat);
+      }
+    })
   }
 
   ndcToCameraSpace(x: number, y: number) {
@@ -456,6 +470,34 @@ class Renderer {
     })
   }
 
+  modelHitTest(origin: Vec4, ray: Vec4, container: ContainerNode): HitTestResult | null {
+    let best: HitTestResult | null = null;
+
+    for (let node of container.nodes) {
+      let result;
+      if (isDrawableInterface(node)) {
+        if (node.tag !== 'drag-camera-plane' && node.tag !== '') {
+          result = node.hitTest(origin, ray)    
+        }
+      }
+      else if (isContainerNode(node)) {
+        result = this.modelHitTest(origin, ray, node);
+      }
+
+      if (result) {
+        if (best === null || result.t < best.t) {
+          best = {
+            drawable: result.drawable,
+            t: result.t,
+            point: result.point,
+          }
+        }
+      }  
+    }
+
+    return best;
+  }
+
   hitTest(x: number, y: number): { point: Vec4, mesh: Drawable} | null {
     if (this.selected.selection.length > 0) {
       // Check for hit test of drag handle in screen space
@@ -483,27 +525,7 @@ class Renderer {
       }
 
       const { ray, origin } = this.computeHitTestRay(x, y);
-      let best: {
-        drawable: Drawable,
-        t: number,
-        point: Vec3
-      } | null = null;
-
-      for (let drawable of this.dragModel) {
-        if (drawable.tag !== 'drag-camera-plane' && drawable.tag !== '') {
-          const result = drawable.hitTest(origin, ray)
-    
-          if (result) {
-            if (best === null || result.t < best.t) {
-              best = {
-                drawable: result.drawable,
-                t: result.t,
-                point: result.point,
-              }
-            }
-          }  
-        }
-      }
+      const best = this.modelHitTest(origin, ray, this.dragModel);
 
       if (best !== null) {
         let planeNormal: Vec4 | null = null;

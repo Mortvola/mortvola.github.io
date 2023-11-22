@@ -3,21 +3,16 @@ import { mat4, vec3, vec4, Mat4, Vec4 } from 'wgpu-matrix';
 import DrawableInterface from "./DrawableInterface";
 import PipelineInterface from '../Pipelines/PipelineInterface';
 import PipelineManager, { PipelineTypes } from '../Pipelines/PipelineManager';
+import SceneNode from './SceneNode';
 
-class Drawable implements DrawableInterface {
+class Drawable extends SceneNode implements DrawableInterface {
   pipeline: PipelineInterface;
-
-  transform = mat4.identity();
-
-  translate = vec3.create(0, 0, 0);
-
-  rotate = vec3.create(0, 0, 0);
-
-  scale = vec3.create(1, 1, 1);
 
   tag = '';
 
   constructor(pipelineType: PipelineTypes) {
+    super();
+
     const pipeline = PipelineManager.getInstance().getPipeline(pipelineType);
 
     if (!pipeline) {
@@ -33,7 +28,7 @@ class Drawable implements DrawableInterface {
     })
   }
 
-  computeTransform(transform?: Mat4, prepend = true) {
+  computeTransform(transform?: Mat4, prepend = true): Mat4 {
     this.transform = mat4.identity();
 
     if (prepend && transform) {
@@ -51,10 +46,6 @@ class Drawable implements DrawableInterface {
     }
 
     return this.transform;
-  }
-
-  getTransform() {
-    return this.transform
   }
 
   render(passEncoder: GPURenderPassEncoder): void {

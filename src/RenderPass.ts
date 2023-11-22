@@ -1,6 +1,8 @@
 import { bindGroups } from "./Renderer";
-import DrawableInterface from "./Drawables/DrawableInterface";
+import DrawableInterface, { isDrawableInterface } from "./Drawables/DrawableInterface";
 import PipelineInterface from "./Pipelines/PipelineInterface";
+import SceneNodeInterface from "./Drawables/SceneNodeInterface";
+import ContainerNode, { isContainerNode } from "./Drawables/ContainerNode";
 
 type PipelineEntry = {
   pipeline: PipelineInterface,
@@ -10,26 +12,33 @@ type PipelineEntry = {
 class RenderPass {
   pipelines: PipelineEntry[] = [];
 
-  addDrawable(drawable: DrawableInterface) {
-    let pipelineEntry = this.pipelines.find((p) => p.pipeline === drawable.pipeline) ?? null;
+  addDrawable(drawable: SceneNodeInterface) {
+    if (isDrawableInterface(drawable)) {
+      let pipelineEntry = this.pipelines.find((p) => p.pipeline === drawable.pipeline) ?? null;
 
-    if (!pipelineEntry) {
-      this.pipelines.push({
-        pipeline: drawable.pipeline,
-        drawables: []
-      })
-
-      pipelineEntry = this.pipelines[this.pipelines.length - 1];
-    }
-
-    if (pipelineEntry) {
-      pipelineEntry.drawables.push(drawable)
+      if (!pipelineEntry) {
+        this.pipelines.push({
+          pipeline: drawable.pipeline,
+          drawables: []
+        })
+  
+        pipelineEntry = this.pipelines[this.pipelines.length - 1];
+      }
+  
+      if (pipelineEntry) {
+        pipelineEntry.drawables.push(drawable)
+      }  
     }
   }
 
-  addDrawables(drawable: DrawableInterface[]) {
-    drawable.forEach((drawable) => {
-      this.addDrawable(drawable);
+  addDrawables(drawable: ContainerNode) {
+    drawable.nodes.forEach((drawable) => {
+      if (isContainerNode(drawable)) {
+        this.addDrawables(drawable)
+      }
+      else {
+        this.addDrawable(drawable);
+      }
     })
   }
 

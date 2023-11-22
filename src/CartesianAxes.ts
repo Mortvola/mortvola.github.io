@@ -1,12 +1,16 @@
+import { Vec4 } from 'wgpu-matrix';
 import { gpu } from "./Renderer";
 import DrawableInterface from "./Drawables/DrawableInterface";
 import PipelineManager, { PipelineTypes } from "./Pipelines/PipelineManager";
 import PipelineInterface from "./Pipelines/PipelineInterface";
+import SceneNode from "./Drawables/SceneNode";
 
-class CartesianAxes implements DrawableInterface {
+class CartesianAxes extends SceneNode implements DrawableInterface {
   vertexBuffer: GPUBuffer;
 
   pipeline: PipelineInterface;
+
+  tag = '';
 
   vertices = [
     -2000, 0, 0, 1,
@@ -23,6 +27,8 @@ class CartesianAxes implements DrawableInterface {
   ];
 
   constructor(pipelineType: PipelineTypes) {
+    super();
+    
     if (!gpu) {
       throw new Error('gepu device not set')
     }
@@ -86,6 +92,14 @@ class CartesianAxes implements DrawableInterface {
   render(passEncoder: GPURenderPassEncoder) {
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.draw(this.vertices.length / 8);  
+  }
+
+  hitTest(origin: Vec4, vector: Vec4): { point: Vec4, t: number, drawable: DrawableInterface} | null {
+    return null;
+  }
+
+  computeCentroid(): Vec4 {
+    throw new Error('not implemented')
   }
 }
 
