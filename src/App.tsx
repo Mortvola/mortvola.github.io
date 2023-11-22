@@ -99,7 +99,7 @@ const  App = () => {
       renderer?.changeCameraPos(0, event.deltaY * 0.01);
     }
     else {
-      renderer?.changeCameraRotation(event.deltaX * 0.1, event.deltaY * 0.1)
+      renderer?.changeCameraRotation(event.deltaX * 0.2, event.deltaY * 0.2)
     }
 
     event.stopPropagation();
