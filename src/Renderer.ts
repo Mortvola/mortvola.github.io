@@ -52,13 +52,6 @@ type DragInfo = {
   }[],
 }
 
-type HitTestResult = {
-  drawable: DrawableInterface,
-  t: number,
-  point: Vec4,
-}
-
-
 export type ProjectionType = 'Perspective' | 'Orthographic';
 
 class Renderer {
@@ -414,24 +407,12 @@ class Renderer {
       const mat = mat4.translate(mat4.identity(), centroid);
       mat4.scale(mat, vec3.create(scale, scale, scale), mat)
 
-      this.updateTransforms(this.dragModel, mat)
+      this.dragModel.updateTransforms(mat)
 
       this.dragHandlesPass.render(view, this.depthTextureView!, commandEncoder);
     }
   
     gpu.device.queue.submit([commandEncoder.finish()]);  
-  }
-
-  updateTransforms(node: ContainerNode, mat: Mat4) {
-    node.nodes.forEach((drawable) => {
-      if (isDrawableInterface(drawable)) {
-        drawable.computeTransform(mat);
-      }
-      else if (isContainerNode(drawable)) {
-        const nodeMat = drawable.computeTransform(mat);
-        this.updateTransforms(drawable, nodeMat);
-      }
-    })
   }
 
   ndcToCameraSpace(x: number, y: number) {
@@ -470,34 +451,6 @@ class Renderer {
     })
   }
 
-  modelHitTest(origin: Vec4, ray: Vec4, container: ContainerNode): HitTestResult | null {
-    let best: HitTestResult | null = null;
-
-    for (let node of container.nodes) {
-      let result;
-      if (isDrawableInterface(node)) {
-        if (node.tag !== 'drag-camera-plane' && node.tag !== '') {
-          result = node.hitTest(origin, ray)    
-        }
-      }
-      else if (isContainerNode(node)) {
-        result = this.modelHitTest(origin, ray, node);
-      }
-
-      if (result) {
-        if (best === null || result.t < best.t) {
-          best = {
-            drawable: result.drawable,
-            t: result.t,
-            point: result.point,
-          }
-        }
-      }  
-    }
-
-    return best;
-  }
-
   hitTest(x: number, y: number): { point: Vec4, mesh: Drawable} | null {
     if (this.selected.selection.length > 0) {
       // Check for hit test of drag handle in screen space
@@ -525,7 +478,7 @@ class Renderer {
       }
 
       const { ray, origin } = this.computeHitTestRay(x, y);
-      const best = this.modelHitTest(origin, ray, this.dragModel);
+      const best = this.dragModel.modelHitTest(origin, ray);
 
       if (best !== null) {
         let planeNormal: Vec4 | null = null;
