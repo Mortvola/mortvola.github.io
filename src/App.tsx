@@ -1,6 +1,6 @@
 import React from 'react';
 import './App.scss';
-import { gpu, renderer, ProjectionType } from './Renderer';
+import { gpu, renderer, ProjectionType, SpaceOrientationType } from './Renderer';
 import Transformations from './Transformations';
 import { StoreContext, store } from './state/Store';
 import Drawable from './Drawables/Drawable';
@@ -118,6 +118,16 @@ const  App = () => {
     setProjection(renderer?.projection)
   }
 
+  const [spaceSelection, setSpaceSelection] = React.useState<SpaceOrientationType>(renderer?.spaceOrientation ?? 'Global');
+
+  const handleSpaceSelection: React.ChangeEventHandler<HTMLSelectElement> = (event) => {
+    setSpaceSelection(event.target.value as SpaceOrientationType);
+
+    if (renderer) {
+      renderer.spaceOrientation = event.target.value as SpaceOrientationType;
+    }
+  }
+
   return (
     <StoreContext.Provider value={store}>
       {
@@ -125,8 +135,16 @@ const  App = () => {
           ? (
             <div className="App">
               <Transformations drawable={selected}/>
-              <div>
+              <div className="canvas-wrapper">
                 <AddObjectMenu />
+                <select
+                  className="orientation-control"
+                  onChange={handleSpaceSelection}
+                  value={spaceSelection}
+                >
+                  <option value="Global">Global</option>
+                  <option value="Local">Local</option>
+                </select>
                 <button type="button" className="settings-button" onClick={handleProjectionClick}>
                   {projection}
                 </button>

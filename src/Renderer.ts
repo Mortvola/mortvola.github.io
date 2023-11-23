@@ -23,6 +23,8 @@ import ContainerNode from './Drawables/ContainerNode';
 
 export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron' | 'Cylinder' | 'Cone';
 
+export type SpaceOrientationType = 'Global' | 'Local';
+
 const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
   requestAnimationFrame((timestamp: number) => {
     setTimeout(() => {
@@ -111,6 +113,8 @@ class Renderer {
   cameraPlaneDragHandle: CameraPlaneDragHandle;
 
   dragModel: ContainerNode;
+
+  spaceOrientation: SpaceOrientationType = 'Global';
 
   onSelectCallback: ((drawable: Drawable | null) => void) | null = null;
 
@@ -416,6 +420,10 @@ class Renderer {
       const mat = mat4.translate(mat4.identity(), centroid);
       mat4.scale(mat, vec3.create(scale, scale, scale), mat)
 
+      if (this.spaceOrientation === 'Local') {
+        mat4.multiply(mat, this.selected.selection[0].drawable.getRotation(), mat);
+      }
+
       this.dragModel.updateTransforms(mat)
 
       this.dragHandlesPass.render(view, this.depthTextureView!, commandEncoder);
@@ -539,6 +547,16 @@ class Renderer {
             break;
         }
 
+        if (this.spaceOrientation === 'Local' && this.selected.selection.length > 0) {
+          if (vector) {
+            vec4.transformMat4(vector, this.selected.selection[0].drawable.getRotation(), vector);
+          }
+
+          if (planeNormal) {
+            vec4.transformMat4(planeNormal, this.selected.selection[0].drawable.getRotation(), planeNormal);
+          }
+        }
+          
         if (planeNormal || vector) {
           this.dragInfo = {
             mode,
@@ -591,6 +609,28 @@ class Renderer {
     return null;
   }
 
+  scaleObject(drawable: Drawable, originalScale: Vec3, scale: Vec3) {
+    const s = mat4.identity();
+
+    if (this.spaceOrientation === 'Global') {
+      mat4.multiply(s, mat4.inverse(drawable.getRotation()), s);
+    }
+
+    mat4.scale(s, scale, s);
+    
+    if (this.spaceOrientation === 'Global') {
+      mat4.multiply(s, drawable.getRotation(), s);
+    }
+
+    mat4.scale(s, originalScale, s);
+
+    drawable.scale = vec3.create(
+      Math.abs(parseFloat(s[0].toFixed(4))),
+      Math.abs(parseFloat(s[5].toFixed(4))),
+      Math.abs(parseFloat(s[10].toFixed(4))),
+    );
+  }
+
   dragObject(x: number, y: number) {
     if (this.dragInfo) {
       const { ray, origin } = this.computeHitTestRay(x, y);
@@ -620,50 +660,17 @@ class Renderer {
                 object.drawable.translate = vec3.add(object.translate, moveVector);
                 break;
 
-              case 'ScaleX': {
-                const s = mat4.multiply(mat4.identity(), mat4.inverse(object.drawable.getRotation()));
-                mat4.scale(s, vec3.create(scale, 1, 1), s);
-                mat4.multiply(s, object.drawable.getRotation(), s);
-                mat4.scale(s, object.scale, s);
-
-                object.drawable.scale = vec3.create(
-                  Math.abs(parseFloat(s[0].toFixed(4))),
-                  Math.abs(parseFloat(s[5].toFixed(4))),
-                  Math.abs(parseFloat(s[10].toFixed(4))),
-                );
-
+              case 'ScaleX':
+                this.scaleObject(object.drawable, object.scale, vec3.create(scale, 1, 1));
                 break;
-              }
 
-              case 'ScaleY': {
-                const s = mat4.multiply(mat4.identity(), mat4.inverse(object.drawable.getRotation()));
-                mat4.scale(s, vec3.create(1, scale, 1), s);
-                mat4.multiply(s, object.drawable.getRotation(), s);
-                mat4.scale(s, object.scale, s);
-
-                object.drawable.scale = vec3.create(
-                  Math.abs(parseFloat(s[0].toFixed(4))),
-                  Math.abs(parseFloat(s[5].toFixed(4))),
-                  Math.abs(parseFloat(s[10].toFixed(4))),
-                );
-
+              case 'ScaleY':
+                this.scaleObject(object.drawable, object.scale, vec3.create(1, scale, 1));
                 break;
-              }
 
-              case 'ScaleZ': {
-                const s = mat4.multiply(mat4.identity(), mat4.inverse(object.drawable.getRotation()));
-                mat4.scale(s, vec3.create(1, 1, scale), s);
-                mat4.multiply(s, object.drawable.getRotation(), s);
-                mat4.scale(s, object.scale, s);
-
-                object.drawable.scale = vec3.create(
-                  Math.abs(parseFloat(s[0].toFixed(4))),
-                  Math.abs(parseFloat(s[5].toFixed(4))),
-                  Math.abs(parseFloat(s[10].toFixed(4))),
-                );
-
+              case 'ScaleZ':
+                this.scaleObject(object.drawable, object.scale, vec3.create(1, 1, scale));
                 break;
-              }
       
               default:
                 break;
