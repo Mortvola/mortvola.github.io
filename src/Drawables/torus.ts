@@ -1,0 +1,52 @@
+import { Vec3, vec3 } from 'wgpu-matrix';
+import Point from "./Point";
+import SurfaceMesh from "./SurfaceMesh";
+
+export const torus = (numSegments = 8, numFacets = 8, radius = 1, thickness = 0.25, color?: Vec3) => {
+  const mesh = new SurfaceMesh();
+
+  const ringRadius = thickness / 2;
+  // Vertices for each ring around the toruns.
+  for (let i = 0; i < numSegments; i += 1) {
+    const theta = 2 * Math.PI / numSegments * i;
+
+    for (let j = 0; j < numFacets; j += 1) {
+      const phi = 2 * Math.PI / numFacets * j;
+
+      const w = vec3.create(Math.cos(theta), Math.sin(theta), 0);
+      const q = vec3.add(
+        vec3.mulScalar(w, radius),
+        vec3.add(
+          vec3.mulScalar(w, ringRadius * Math.cos(phi)),
+          vec3.create(0, 0, ringRadius * Math.sin(phi)),
+        )
+      )
+
+      mesh.addVertex(new Point(q[0], q[1], q[2]), color);
+    }
+  }
+
+  for (let i = 0; i < numSegments - 1; i += 1) {
+    const offset = i * numFacets;
+    for (let j = 0; j < numFacets; j += 1) {
+      mesh.addQuad(
+        j + offset,
+        (j + 1) % 8 + offset,
+        (j + 1) % 8 + numFacets + offset,
+        j + numFacets + offset,
+      );
+    }
+  }
+
+  const offset = (numSegments - 1) * numFacets;
+  for (let j = 0; j < numFacets; j += 1) {
+    mesh.addQuad(
+      j + offset,
+      (j + 1) % 8 + offset,
+      (j + 1) % 8, // + numFacets + offset,
+      j, // + numFacets + offset,
+    );
+  }
+
+  return mesh;
+}

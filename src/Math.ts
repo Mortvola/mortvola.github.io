@@ -92,7 +92,7 @@ export const pointRayDistance = (origin: Vec4, ray: Vec4, point: Vec4) => {
 // v dot B1 = 0
 // v dot B2 = 0
 //
-export const closestPointBetweenRays = (originA: Vec4, rayA: Vec4, originB: Vec4, rayB: Vec4) => {
+export const closestPointsBetweenRays = (originA: Vec4, rayA: Vec4, originB: Vec4, rayB: Vec4): [Vec4, Vec4] => {
   const a = vec3.dot(rayA, rayA);
   const b = vec3.dot(rayA, rayB);
   const c = vec3.dot(rayB, rayB);
@@ -108,5 +108,51 @@ export const closestPointBetweenRays = (originA: Vec4, rayA: Vec4, originB: Vec4
   const t2 = (b * (f - d) + a * (e - g)) / (a * c - b * b);
   const p2 = vec4.add(originB, vec4.mulScalar(rayB, t2))
 
-  return {p1, p2};
+  return [p1, p2];
 }
+
+export const getXAngle = (planeNormal: Vec4, center: Vec4, origin: Vec4, ray: Vec4) => {
+  let intersection = intersectionPlane(center, planeNormal, origin, ray);
+
+  if (intersection) {
+    intersection = vec3.normalize(vec4.subtract(intersection, center));
+    let angle = Math.acos(-intersection[2]);
+
+    if (intersection[1] < 0) {
+      angle = 2 * Math.PI - angle;
+    }
+
+    return angle;
+  }
+}
+
+export const getYAngle = (planeNormal: Vec4, center: Vec4, origin: Vec4, ray: Vec4) => {
+  let intersection = intersectionPlane(center, planeNormal, origin, ray);
+
+  if (intersection) {
+    intersection = vec3.normalize(vec4.subtract(intersection, center));
+    let angle = Math.acos(intersection[2]);
+
+    if (intersection[0] < 0) {
+      angle = 2 * Math.PI - angle;
+    }
+
+    return angle;
+  }
+}
+
+export const getZAngle = (planeNormal: Vec4, center: Vec4, origin: Vec4, ray: Vec4) => {
+  let intersection = intersectionPlane(center, planeNormal, origin, ray);
+
+  if (intersection) {
+    intersection = vec3.normalize(vec4.subtract(intersection, center));
+    let angle = Math.acos(intersection[0]);
+
+    if (intersection[1] < 0) {
+      angle = 2 * Math.PI - angle;
+    }
+
+    return angle;
+  }
+}
+

@@ -9,6 +9,10 @@ class SceneNode {
 
   scale = vec3.create(1, 1, 1);
 
+  constructor() {
+    this.computeTransform();
+  }
+
   getTransform(): Mat4 {
     return this.transform
   }
