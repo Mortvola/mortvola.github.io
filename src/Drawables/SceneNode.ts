@@ -1,15 +1,20 @@
-import { mat4, vec3, Mat4 } from 'wgpu-matrix';
+import { mat4, vec3, Mat4, quat, Quat } from 'wgpu-matrix';
+import { getEulerAngles } from '../Math';
 
 class SceneNode {
   transform = mat4.identity();
 
   translate = vec3.create(0, 0, 0);
 
-  rotate = vec3.create(0, 0, 0);
+  qRotate = quat.fromEuler(0, 0, 0, 'xyz');
+
+  angles: number[];
 
   scale = vec3.create(1, 1, 1);
 
   constructor() {
+    this.angles = getEulerAngles(this.qRotate);
+  
     this.computeTransform();
   }
 
@@ -18,13 +23,25 @@ class SceneNode {
   }
 
   getRotation(): Mat4 {
-    const transform = mat4.identity();
+    return mat4.fromQuat(this.qRotate);
+  }
 
-    mat4.rotateX(transform, this.rotate[0], transform);
-    mat4.rotateY(transform, this.rotate[1], transform);
-    mat4.rotateZ(transform, this.rotate[2], transform);
+  rotate(x: number, y: number, z: number) {
+    const q = quat.fromEuler(x, y, z, "xyz");
 
-    return transform;
+    this.qRotate = quat.multiply(this.qRotate, q);
+
+    this.angles = getEulerAngles(this.qRotate);
+  }
+
+  setFromAngles(x: number, y: number, z: number) {
+    this.qRotate = quat.fromEuler(x, y, z, "xyz");
+    this.angles = [x, y, z];
+  }
+
+  setQRotate(q: Quat) {
+    this.qRotate = q;
+    this.angles = getEulerAngles(this.qRotate);
   }
 
   computeTransform(transform?: Mat4, prepend = true): Mat4 {

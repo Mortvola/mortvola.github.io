@@ -1,4 +1,4 @@
-import { Vec4, Vec3, Mat4 } from 'wgpu-matrix';
+import { Vec4, Vec3, Mat4, Quat } from 'wgpu-matrix';
 import PipelineInterface from "../Pipelines/PipelineInterface";
 
 interface DrawableInterface {
@@ -10,7 +10,7 @@ interface DrawableInterface {
 
   translate: Vec3;
 
-  rotate: Vec3;
+  qRotate: Quat;
 
   scale: Vec3;
 

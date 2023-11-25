@@ -23,7 +23,7 @@ class Drawable extends SceneNode implements DrawableInterface {
 
     makeObservable(this, {
       translate: observable,
-      rotate: observable,
+      angles: observable,
       scale: observable,
     })
   }

@@ -8,26 +8,35 @@ type PropsType = {
   values: Vec3,
   index: number,
   degrees?: boolean,
+  onChange?: (index: number, value: number) => void,
 }
 
 const ValueInput: React.FC<PropsType> = observer(({
   values,
   index,
   degrees = false,
+  onChange,
 }) => {
   const [edit, setEdit] = React.useState<boolean>(false);
   const [editValue, setEditValue] = React.useState<string>('0');
   
   const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     setEditValue(event.target.value)
-    runInAction(() => {
-      if (degrees) {
-        values[index] = degToRad(parseFloat(event.target.value ?? 0));
-      }
-      else {
-        values[index] = parseFloat(event.target.value ?? 0);
-      }
-    })
+    const value = parseFloat(event.target.value ?? 0);
+
+    if (onChange) {
+      onChange(index, degToRad(value))
+    }
+    else {
+      runInAction(() => {
+        if (degrees) {
+          values[index] = degToRad(value);
+        }
+        else {
+          values[index] = value;
+        }
+      })  
+    }
   }
 
   const handleFocus: React.FocusEventHandler<HTMLInputElement> = () => {

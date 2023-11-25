@@ -1,4 +1,4 @@
-import { vec3, vec4, Vec3, Vec4 } from "wgpu-matrix";
+import { vec3, vec4, Vec3, Vec4, Quat, mat4 } from "wgpu-matrix";
 
 export const degToRad = (d: number) => d * Math.PI / 180;
 export const radToDeg = (r: number) => (r /  Math.PI) * 180;
@@ -111,14 +111,17 @@ export const closestPointsBetweenRays = (originA: Vec4, rayA: Vec4, originB: Vec
   return [p1, p2];
 }
 
-export const getXAngle = (planeNormal: Vec4, center: Vec4, origin: Vec4, ray: Vec4) => {
+export const getAngle = (planeNormal: Vec4, up: Vec4, center: Vec4, origin: Vec4, ray: Vec4) => {
   let intersection = intersectionPlane(center, planeNormal, origin, ray);
 
   if (intersection) {
     intersection = vec3.normalize(vec4.subtract(intersection, center));
-    let angle = Math.acos(-intersection[2]);
 
-    if (intersection[1] < 0) {
+    const right = vec3.cross(up, planeNormal);
+
+    let angle = Math.acos(vec3.dot(right, intersection));
+
+    if (vec3.dot(up, intersection) < 0) {
       angle = 2 * Math.PI - angle;
     }
 
@@ -126,33 +129,32 @@ export const getXAngle = (planeNormal: Vec4, center: Vec4, origin: Vec4, ray: Ve
   }
 }
 
-export const getYAngle = (planeNormal: Vec4, center: Vec4, origin: Vec4, ray: Vec4) => {
-  let intersection = intersectionPlane(center, planeNormal, origin, ray);
-
-  if (intersection) {
-    intersection = vec3.normalize(vec4.subtract(intersection, center));
-    let angle = Math.acos(intersection[2]);
-
-    if (intersection[0] < 0) {
-      angle = 2 * Math.PI - angle;
-    }
-
-    return angle;
+const clamp = (v: number, l: number, h: number): number => {
+  if (v < l) {
+    return l;
   }
+
+  if (v > h) {
+    return h;
+  }
+
+  return v;
 }
 
-export const getZAngle = (planeNormal: Vec4, center: Vec4, origin: Vec4, ray: Vec4) => {
-  let intersection = intersectionPlane(center, planeNormal, origin, ray);
+export const getEulerAngles = (q: Quat) => {
+  const m = mat4.fromQuat(q)
 
-  if (intersection) {
-    intersection = vec3.normalize(vec4.subtract(intersection, center));
-    let angle = Math.acos(intersection[0]);
+  let x;
+  let z;
+  const y = Math.asin( clamp( m[8], -1, 1 ) );
 
-    if (intersection[1] < 0) {
-      angle = 2 * Math.PI - angle;
-    }
-
-    return angle;
+  if ( Math.abs( m[8] ) < 0.9999999 ) {
+    x = Math.atan2(-m[9], m[10] );
+    z = Math.atan2(-m[4], m[0] );
+  } else {
+    x = Math.atan2( m[6], m[5] );
+    z = 0;
   }
-}
 
+  return [x, y, z];
+}

@@ -1,10 +1,13 @@
 import {
-  mat4, vec3, vec4, quat, Vec3, Vec4, Mat4, setDefaultType,
+  mat4, vec3, vec4, quat, Vec3, Vec4, Mat4, setDefaultType, Quat,
 } from 'wgpu-matrix';
 import { runInAction } from 'mobx';
 import BindGroups from "./BindGroups";
 import Gpu from "./Gpu";
-import { closestPointsBetweenRays, degToRad, getXAngle, getYAngle, getZAngle, intersectionPlane, normalizeDegrees } from "./Math";
+import {
+  closestPointsBetweenRays, degToRad, getAngle, getEulerAngles,
+  intersectionPlane, normalizeDegrees,
+} from "./Math";
 import Mesh from "./Drawables/Mesh";
 import Models from './Models';
 import CartesianAxes from './CartesianAxes';
@@ -46,12 +49,15 @@ type HitTestInfo = {
   translate: Vec4,
 }
 
-type DragMode = 'Translate' | 'ScaleAll' | 'ScaleX' | 'ScaleY' | 'ScaleZ' | 'RotateX' | 'RotateY' | 'RotateZ';
+type DragMode = 'Translate' | 'ScaleAll' | 'ScaleX' | 'ScaleY' | 'ScaleZ' | 'Rotate';
 
 type DragInfo = {
   mode: DragMode,
   point: Vec4,
   planeNormal: Vec4 | null,
+  up?: Vec4,
+  rotation?: Vec4,
+  axis?: 'x' | 'y' | 'z',
   vector: Vec4 | null,
   startingAngle: number,
   centroid: Vec4,
@@ -60,7 +66,7 @@ type DragInfo = {
     drawable: Drawable,
     translate: Vec3,
     scale: Vec3,
-    rotate: Vec3,
+    qRotate: Quat,
   }[],
 }
 
@@ -131,15 +137,15 @@ class Renderer {
     const planeHandleDimension = 0.75;
 
     const xAxisPlaneDragHandle = new Mesh(plane(planeHandleDimension, planeHandleDimension, xColor), 'drag-handles');
-    xAxisPlaneDragHandle.rotate = vec3.create(0, degToRad(90), 0);
+    xAxisPlaneDragHandle.rotate(0, degToRad(90), 0);
     xAxisPlaneDragHandle.translate = vec3.create(0, 2, 2);
     xAxisPlaneDragHandle.tag = 'drag-x-axis-plane';
 
     const xAxis = this.createAxis('x-axis', xColor);
-    xAxis.rotate = vec3.create(0, 0, degToRad(270));
+    xAxis.rotate(0, 0, degToRad(270));
 
     const yAxisPlaneDragHandle = new Mesh(plane(planeHandleDimension, planeHandleDimension, yColor), 'drag-handles');
-    yAxisPlaneDragHandle.rotate = vec3.create(degToRad(270), 0, 0);
+    yAxisPlaneDragHandle.rotate(degToRad(270), 0, 0);
     yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
     yAxisPlaneDragHandle.tag = 'drag-y-axis-plane';
 
@@ -150,7 +156,7 @@ class Renderer {
     zAxisPlaneDragHandle.tag ='drag-z-axis-plane';
 
     const zAxis = this.createAxis('z-axis', zColor);
-    zAxis.rotate = vec3.create(degToRad(90), 0, 0);
+    zAxis.rotate(degToRad(90), 0, 0);
 
     this.cameraPlaneDragHandle = cameraPlaneDragHandle;
     this.cameraPlaneDragHandle.tag = 'drag-camera-plane';
@@ -166,7 +172,7 @@ class Renderer {
     this.dragModel.nodes.push(cameraPlaneDragHandle);
 
     let t = new Mesh(torus(32, 8, 2, 0.125, xColor), 'pipeline');
-    t.rotate = vec3.create(0, degToRad(90), 0);
+    t.rotate(0, degToRad(90), 0);
     t.tag = 'drag-rotate-x';
     this.dragModel.nodes.push(t);
 
@@ -175,7 +181,7 @@ class Renderer {
     this.dragModel.nodes.push(t);
 
     t = new Mesh(torus(32, 8, 2, 0.125, yColor), 'pipeline');
-    t.rotate = vec3.create(degToRad(90), 0, 0);
+    t.rotate(degToRad(90), 0, 0);
     t.tag = 'drag-rotate-y';
     this.dragModel.nodes.push(t);
 
@@ -516,7 +522,7 @@ class Renderer {
             drawable: object.drawable,
             translate: object.drawable.translate,
             scale: object.drawable.scale,
-            rotate: vec3.copy(object.drawable.rotate),
+            qRotate: quat.copy(object.drawable.qRotate),
           }))
         }
 
@@ -530,9 +536,11 @@ class Renderer {
         let planeNormal: Vec4 | null = null;
         let vector: Vec4 | null = null;
         let mode: DragMode = 'Translate';
-        let startingAngle;
+        let startingAngle: number | undefined;
+        let up: Vec4 | undefined;
+        let rotation: Vec4 | undefined;
+        let axis: 'x' | 'y' | 'z' | undefined;
 
-        console.log(best.drawable.tag)
         switch (best.drawable.tag) {
           case 'drag-z-axis-plane':
             planeNormal = vec4.create(0, 0, 1, 0);
@@ -574,21 +582,27 @@ class Renderer {
             break;
 
           case 'drag-rotate-x':
-            mode = 'RotateX';
+            mode = 'Rotate';
             planeNormal = vec4.create(1, 0, 0, 0);
-            startingAngle = getXAngle(planeNormal, this.selected.getCentroid(), origin, ray);
+            up = vec4.create(0, 1, 0, 0);
+            rotation = vec4.create(1, 0, 0, 0);
+            axis = 'x';
             break;
 
           case 'drag-rotate-y':
-            mode = 'RotateY';
+            mode = 'Rotate';
             planeNormal = vec4.create(0, 1, 0, 0);
-            startingAngle = getYAngle(planeNormal, this.selected.getCentroid(), origin, ray);
+            up = vec4.create(1, 0, 0, 0);
+            rotation = vec4.create(0, 1, 0, 0);
+            axis = 'y';
             break;
 
           case 'drag-rotate-z':
-            mode = 'RotateZ';
+            mode = 'Rotate';
             planeNormal = vec4.create(0, 0, 1, 0);
-            startingAngle = getZAngle(planeNormal, this.selected.getCentroid(), origin, ray);
+            up = vec4.create(0, 1, 0, 0);
+            rotation = vec4.create(0, 0, 1, 0);
+            axis = 'z';
             break;
         }
 
@@ -599,15 +613,32 @@ class Renderer {
 
           if (planeNormal) {
             vec4.transformMat4(planeNormal, this.selected.selection[0].drawable.getRotation(), planeNormal);
+            console.log(`normal: ${planeNormal}`)
+          }
+
+          if (up) {
+            vec4.transformMat4(up, this.selected.selection[0].drawable.getRotation(), up);
+            console.log(`up: ${up}`)
           }
         }
           
         if (planeNormal || vector) {
+          switch (best.drawable.tag) {
+            case 'drag-rotate-x':
+            case 'drag-rotate-y':
+            case 'drag-rotate-z':
+              startingAngle = getAngle(planeNormal!, up!, this.selected.getCentroid(), origin, ray);
+              break;
+          }
+
           this.dragInfo = {
             mode,
             point: best.point,
             planeNormal,
+            up,
+            rotation,
             vector,
+            axis,
             startingAngle: startingAngle ?? 0,
             centroid: this.selected.getCentroid(),
             initialDistance: vec3.distance(this.selected.getCentroid(), best.point),
@@ -615,7 +646,7 @@ class Renderer {
               drawable: object.drawable,
               translate: vec3.copy(object.drawable.translate),
               scale: vec3.copy(object.drawable.scale),
-              rotate: vec3.copy(object.drawable.rotate),
+              qRotate: quat.copy(object.drawable.qRotate),
             }))
           }  
 
@@ -728,33 +759,38 @@ class Renderer {
                 break;  
               }
 
-              case 'RotateX':
+              case 'Rotate':
                 if (this.dragInfo.planeNormal) {
-                  const angle = getXAngle(this.dragInfo.planeNormal, this.dragInfo.centroid, origin, ray);
+                  const angle = getAngle(this.dragInfo.planeNormal, this.dragInfo.up!, this.dragInfo.centroid, origin, ray);
 
                   if (angle) {
-                    console.log(`rotate: ${object.rotate[0]}`);
-                    object.drawable.rotate[0] = object.rotate[0] + angle - this.dragInfo.startingAngle;
-                  }
-                }
-                break;
+                    const deltaAngle = angle - this.dragInfo.startingAngle;
 
-              case 'RotateY':
-                if (this.dragInfo.planeNormal) {
-                  const angle = getYAngle(this.dragInfo.planeNormal, this.dragInfo.centroid, origin, ray);
+                    let q: Quat;
 
-                  if (angle) {
-                    object.drawable.rotate[1] = object.rotate[1] + angle - this.dragInfo.startingAngle;
-                  }
-                }
-                break;
+                    switch (this.dragInfo.axis!) {
+                      case 'x':
+                        q = quat.fromEuler(deltaAngle, 0, 0, "xyz");
+                        break;
 
-              case 'RotateZ':
-                if (this.dragInfo.planeNormal) {
-                  const angle = getZAngle(this.dragInfo.planeNormal, this.dragInfo.centroid, origin, ray);
+                      case 'y':
+                        q = quat.fromEuler(0, deltaAngle, 0, "xyz");
+                        break;
 
-                  if (angle) {
-                    object.drawable.rotate[2] = object.rotate[2] + angle - this.dragInfo.startingAngle;
+                      case 'z':
+                        q = quat.fromEuler(0, 0, deltaAngle, "xyz");
+                        break;
+
+                      default:
+                        throw new Error('axis not set');
+                    }
+
+                    if (this.spaceOrientation === 'Global') {
+                      object.drawable.setQRotate(quat.multiply(q, object.qRotate));
+                    }
+                    else {
+                      object.drawable.setQRotate(quat.multiply(object.qRotate, q));
+                    }
                   }
                 }
                 break;
