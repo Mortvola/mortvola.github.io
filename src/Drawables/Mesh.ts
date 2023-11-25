@@ -7,11 +7,15 @@ import { PipelineTypes } from '../Pipelines/PipelineManager';
 class Mesh extends Drawable {
   mesh: SurfaceMesh;
 
+  color = new Float32Array(4);
+
   vertexBuffer: GPUBuffer;
 
   indexBuffer: GPUBuffer;
 
   bindGroup: GPUBindGroup;
+
+  colorBuffer: GPUBuffer;
 
   uniformBuffer: GPUBuffer;
 
@@ -23,6 +27,7 @@ class Mesh extends Drawable {
     }
 
     this.mesh = mesh;
+    this.setColor(mesh.color);
 
     this.vertexBuffer = gpu.device.createBuffer({
       size: this.mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
@@ -48,30 +53,39 @@ class Mesh extends Drawable {
       this.indexBuffer.unmap();  
     }
 
-    const bindGroupLayout = gpu.device.createBindGroupLayout({
-      label: 'Mesh Bind Group',
-      entries: [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.VERTEX,
-          buffer: {},
-        },
-      ]
-    })
+    const bindGroupLayouts = this.pipeline.getBindGroupLayouts();
 
     this.uniformBuffer = gpu.device.createBuffer({
-      label: 'uniforms',
+      label: 'model Matrix',
       size: 16 * Float32Array.BYTES_PER_ELEMENT,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.colorBuffer = gpu.device.createBuffer({
+      label: 'color',
+      size: 4 * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
     this.bindGroup = gpu.device.createBindGroup({
       label: 'bind group for model matrix',
-      layout: bindGroupLayout,
+      layout: bindGroupLayouts[0],
       entries: [
         { binding: 0, resource: { buffer: this.uniformBuffer }},
+        { binding: 1, resource: { buffer: this.colorBuffer }},
       ],
     });
+  }
+
+  setColor(color: Vec4) {
+    this.color[0] = color[0];
+    this.color[1] = color[1];
+    this.color[2] = color[2];
+    this.color[3] = color[3];
+  }
+
+  getColor(): Float32Array {
+    return this.color;
   }
 
   render(passEncoder: GPURenderPassEncoder) {
@@ -80,6 +94,7 @@ class Mesh extends Drawable {
     }
 
     gpu.device.queue.writeBuffer(this.uniformBuffer, 0, this.getTransform() as Float32Array);
+    gpu.device.queue.writeBuffer(this.colorBuffer, 0, this.color);
 
     passEncoder.setBindGroup(1, this.bindGroup);
 

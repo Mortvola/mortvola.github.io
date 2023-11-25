@@ -27,6 +27,11 @@ class DragHandlesPipeline implements PipelineInterface {
             visibility: GPUShaderStage.VERTEX,
             buffer: {},
           },
+          {
+            binding: 1,
+            visibility: GPUShaderStage.VERTEX,
+            buffer: {},
+          },
         ]
       }),
     ]
@@ -60,12 +65,12 @@ class DragHandlesPipeline implements PipelineInterface {
     const pipelineDescriptor: GPURenderPipelineDescriptor = {
       vertex: {
         module: shaderModule,
-        entryPoint: "vertex_main",
+        entryPoint: "vertex_simple",
         buffers: vertexBufferLayout,
       },
       fragment: {
         module: shaderModule,
-        entryPoint: "fragment_main",
+        entryPoint: "fragment_simple",
         targets: [
           {
             format: navigator.gpu.getPreferredCanvasFormat(),

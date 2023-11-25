@@ -8,26 +8,27 @@ struct VertexOut {
   @location(0) color : vec4f
 }
 
-@group(0) @binding(0) var<uniform> projectionMatri: mat4x4f;
-@group(0) @binding(1) var<uniform> view: mat4x4f;
+@group(0) @binding(0) var<uniform> projectionMatrix: mat4x4f;
+@group(0) @binding(1) var<uniform> viewMatrix: mat4x4f;
 
-@group(1) @binding(0) var<uniform> model: mat4x4f;
+@group(1) @binding(0) var<uniform> modelMatrix: mat4x4f;
+@group(1) @binding(1) var<uniform> color: vec4f;
 
 @vertex
-fn vertex_main(vert: Vertex) -> VertexOut
+fn vertex_simple(vert: Vertex) -> VertexOut
 {
   var output : VertexOut;
 
-  output.position = projectionMatri * view * model * vert.position;
+  output.position = projectionMatrix * viewMatrix * modelMatrix * vert.position;
   // output.position.x *= output.position.w;
   // output.position.y *= output.position.w;
 
-  output.color = vert.color;
+  output.color = color;
   return output;
 }
 
 @fragment
-fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
+fn fragment_simple(fragData: VertexOut) -> @location(0) vec4f
 {
   return fragData.color;
 }

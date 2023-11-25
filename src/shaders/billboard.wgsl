@@ -7,6 +7,7 @@ struct VertexOut {
 @group(0) @binding(1) var<uniform> view: mat4x4f;
 
 @group(1) @binding(0) var<uniform> model: mat4x4f;
+@group(1) @binding(1) var<uniform> color: vec4f;
 
 @group(2) @binding(0) var<uniform> radius: f32;
 

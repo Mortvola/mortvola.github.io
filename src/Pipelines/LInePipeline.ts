@@ -61,12 +61,12 @@ class LinePipeline implements PipelineInterface {
     const pipelineDescriptor: GPURenderPipelineDescriptor = {
       vertex: {
         module: shaderModule,
-        entryPoint: "vertex_main",
+        entryPoint: "vertex_line",
         buffers: vertexBufferLayout,
       },
       fragment: {
         module: shaderModule,
-        entryPoint: "fragment_main",
+        entryPoint: "fragment_line",
         targets: [
           {
             format: navigator.gpu.getPreferredCanvasFormat(),

@@ -1,9 +1,9 @@
 import Point from "./Point";
-import { Vec3 } from 'wgpu-matrix';
+import { Vec4 } from 'wgpu-matrix';
 import SurfaceMesh from "./SurfaceMesh";
 
-export const box = (width = 2, height = 2, depth = 2, color?: Vec3) => {
-  const mesh = new SurfaceMesh();
+export const box = (width = 2, height = 2, depth = 2, color?: Vec4) => {
+  const mesh = new SurfaceMesh(color);
 
   const x = width / 2;
   const y = height / 2;

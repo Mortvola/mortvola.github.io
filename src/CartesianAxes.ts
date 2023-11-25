@@ -101,6 +101,13 @@ class CartesianAxes extends SceneNode implements DrawableInterface {
   computeCentroid(): Vec4 {
     throw new Error('not implemented')
   }
+
+  setColor(color: Vec4) {
+  }
+
+  getColor(): Float32Array {
+    throw new Error('not implemented');
+  }
 }
 
 export default CartesianAxes;

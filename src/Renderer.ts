@@ -5,7 +5,7 @@ import { runInAction } from 'mobx';
 import BindGroups from "./BindGroups";
 import Gpu from "./Gpu";
 import {
-  closestPointsBetweenRays, degToRad, getAngle, getEulerAngles,
+  closestPointsBetweenRays, degToRad, getAngle,
   intersectionPlane, normalizeDegrees,
 } from "./Math";
 import Mesh from "./Drawables/Mesh";
@@ -24,10 +24,8 @@ import { cylinder } from './Drawables/cylinder';
 import { cone } from './Drawables/cone';
 import ContainerNode from './Drawables/ContainerNode';
 import { torus } from './Drawables/torus';
-
-const xColor = vec3.create(1, 0, 0);
-const yColor = vec3.create(0, 1, 0);
-const zColor = vec4.create(0, 0, 1);
+import { rotationOrder } from './Drawables/SceneNode';
+import DrawableInterface from './Drawables/DrawableInterface';
 
 export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron' | 'Cylinder' | 'Cone';
 
@@ -136,6 +134,10 @@ class Renderer {
 
     const planeHandleDimension = 0.75;
 
+    const xColor = this.getDragColor('drag-x');
+    const yColor = this.getDragColor('drag-y');
+    const zColor = this.getDragColor('drag-z');
+    
     const xAxisPlaneDragHandle = new Mesh(plane(planeHandleDimension, planeHandleDimension, xColor), 'drag-handles');
     xAxisPlaneDragHandle.rotate(0, degToRad(90), 0);
     xAxisPlaneDragHandle.translate = vec3.create(0, 2, 2);
@@ -173,16 +175,16 @@ class Renderer {
 
     let t = new Mesh(torus(32, 8, 2, 0.125, xColor), 'pipeline');
     t.rotate(0, degToRad(90), 0);
-    t.tag = 'drag-rotate-x';
+    t.tag = 'drag-x-rotate';
     this.dragModel.nodes.push(t);
 
     t = new Mesh(torus(32, 8, 2, 0.125, zColor), 'pipeline');
-    t.tag = 'drag-rotate-z';
+    t.tag = 'drag-z-rotate';
     this.dragModel.nodes.push(t);
 
     t = new Mesh(torus(32, 8, 2, 0.125, yColor), 'pipeline');
     t.rotate(degToRad(90), 0, 0);
-    t.tag = 'drag-rotate-y';
+    t.tag = 'drag-y-rotate';
     this.dragModel.nodes.push(t);
 
     // this.dragModel.nodes.push(new Circle(2, 0.1, 'circle'));
@@ -197,11 +199,11 @@ class Renderer {
 
     const axisDragHandle = new Mesh(cylinder(8, 0.0625, 2.5, color), 'drag-handles');
     axisDragHandle.translate = vec3.create(0, 1.25, 0);
-    axisDragHandle.tag = `scale-${tag}`;
+    axisDragHandle.tag = `drag-${tag}-scale`;
 
     const boxHandle = new Mesh(box(0.35, 0.35, 0.35, color), 'drag-handles');
     boxHandle.translate = vec3.create(0, 2.5, 0);
-    boxHandle.tag = `scale-${tag}`;
+    boxHandle.tag = `drag-${tag}-scale`;
 
     const coneHandle = new Mesh(cone(8, 0.75, 0.20, color), 'drag-handles')
     coneHandle.translate = vec3.create(0, 3.5, 0);
@@ -550,7 +552,7 @@ class Renderer {
             vector = vec4.create(1, 0, 0, 0);
             break;
 
-          case 'scale-x-axis':
+          case 'drag-x-axis-scale':
             mode = 'ScaleX';
             vector = vec4.create(1, 0, 0, 0);
             break;
@@ -563,7 +565,7 @@ class Renderer {
             vector = vec4.create(0, 1, 0, 0);
             break;
 
-          case 'scale-y-axis':
+          case 'drag-y-axis-scale':
             mode = 'ScaleY';
             vector = vec4.create(0, 1, 0, 0);
             break;
@@ -576,12 +578,12 @@ class Renderer {
             vector = vec4.create(0, 0, 1, 0);
             break;
 
-          case 'scale-z-axis':
+          case 'drag-z-axis-scale':
             mode = 'ScaleZ';
             vector = vec4.create(0, 0, 1, 0);
             break;
 
-          case 'drag-rotate-x':
+          case 'drag-x-rotate':
             mode = 'Rotate';
             planeNormal = vec4.create(1, 0, 0, 0);
             up = vec4.create(0, 1, 0, 0);
@@ -589,7 +591,7 @@ class Renderer {
             axis = 'x';
             break;
 
-          case 'drag-rotate-y':
+          case 'drag-y-rotate':
             mode = 'Rotate';
             planeNormal = vec4.create(0, 1, 0, 0);
             up = vec4.create(1, 0, 0, 0);
@@ -597,7 +599,7 @@ class Renderer {
             axis = 'y';
             break;
 
-          case 'drag-rotate-z':
+          case 'drag-z-rotate':
             mode = 'Rotate';
             planeNormal = vec4.create(0, 0, 1, 0);
             up = vec4.create(0, 1, 0, 0);
@@ -613,20 +615,18 @@ class Renderer {
 
           if (planeNormal) {
             vec4.transformMat4(planeNormal, this.selected.selection[0].drawable.getRotation(), planeNormal);
-            console.log(`normal: ${planeNormal}`)
           }
 
           if (up) {
             vec4.transformMat4(up, this.selected.selection[0].drawable.getRotation(), up);
-            console.log(`up: ${up}`)
           }
         }
           
         if (planeNormal || vector) {
           switch (best.drawable.tag) {
-            case 'drag-rotate-x':
-            case 'drag-rotate-y':
-            case 'drag-rotate-z':
+            case 'drag-x-rotate':
+            case 'drag-y-rotate':
+            case 'drag-z-rotate':
               startingAngle = getAngle(planeNormal!, up!, this.selected.getCentroid(), origin, ray);
               break;
           }
@@ -770,15 +770,15 @@ class Renderer {
 
                     switch (this.dragInfo.axis!) {
                       case 'x':
-                        q = quat.fromEuler(deltaAngle, 0, 0, "xyz");
+                        q = quat.fromEuler(deltaAngle, 0, 0, rotationOrder);
                         break;
 
                       case 'y':
-                        q = quat.fromEuler(0, deltaAngle, 0, "xyz");
+                        q = quat.fromEuler(0, deltaAngle, 0, rotationOrder);
                         break;
 
                       case 'z':
-                        q = quat.fromEuler(0, 0, deltaAngle, "xyz");
+                        q = quat.fromEuler(0, 0, deltaAngle, rotationOrder);
                         break;
 
                       default:
@@ -816,9 +816,62 @@ class Renderer {
     }
   }
 
+  prevHover: DrawableInterface | null = null;
+
+  getDragColor(name: string): Vec4 {
+    if (/^drag-x/.test(name)) {
+      return vec4.create(0.75, 0, 0, 1);
+    }
+
+    if (/^drag-y/.test(name)) {
+      return vec4.create(0, 0.75, 0, 1);
+    }
+
+    if (/^drag-z/.test(name)) {
+      // return vec4.create(0.4, 0.4, 1, 1);
+      return vec4.create(0, 0, 1, 1);
+    }
+
+    return vec4.create(0, 0, 0, 1);
+  }
+
+  getDragHoverColor(name: string): Vec4 {
+    if (/^drag-x/.test(name)) {
+      return vec4.create(1, 0, 0, 1);
+    }
+
+    if (/^drag-y/.test(name)) {
+      return vec4.create(0, 1, 0, 1);
+    }
+
+    if (/^drag-z/.test(name)) {
+      return vec4.create(0.5, 0.5, 1, 1);
+    }
+
+    return vec4.create(0, 0, 0, 1);
+  }
+
   pointerMove(x: number, y: number) {
     if (this.dragInfo) {
       this.dragObject(x, y);
+    }
+    else if (this.selected.selection.length > 0) {
+      const { ray, origin } = this.computeHitTestRay(x, y);
+      const best = this.dragModel.modelHitTest(origin, ray);
+
+      if (best && (best.drawable.tag ?? '') !== '') {
+        if (this.prevHover) {
+          this.prevHover.setColor(this.getDragColor(this.prevHover.tag));
+        }
+
+        this.prevHover = best.drawable;
+
+        best.drawable.setColor(this.getDragHoverColor(this.prevHover.tag));
+      }
+      else if (this.prevHover) {
+        this.prevHover.setColor(this.getDragColor(this.prevHover.tag));
+        this.prevHover = null;
+      }
     }
   }
 

@@ -27,6 +27,11 @@ class BillboardPipeline implements PipelineInterface {
             visibility: GPUShaderStage.VERTEX,
             buffer: {},
           },
+          {
+            binding: 1,
+            visibility: GPUShaderStage.VERTEX,
+            buffer: {},
+          },
         ]
       }),
       gpu.device.createBindGroupLayout({

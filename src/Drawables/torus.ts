@@ -1,9 +1,9 @@
-import { Vec3, vec3 } from 'wgpu-matrix';
+import { Vec4, vec3 } from 'wgpu-matrix';
 import Point from "./Point";
 import SurfaceMesh from "./SurfaceMesh";
 
-export const torus = (numSegments = 8, numFacets = 8, radius = 1, thickness = 0.25, color?: Vec3) => {
-  const mesh = new SurfaceMesh();
+export const torus = (numSegments = 8, numFacets = 8, radius = 1, thickness = 0.25, color?: Vec4) => {
+  const mesh = new SurfaceMesh(color);
 
   const ringRadius = thickness / 2;
   // Vertices for each ring around the toruns.

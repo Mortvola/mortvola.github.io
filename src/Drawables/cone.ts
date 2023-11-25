@@ -1,9 +1,9 @@
-import { Vec3 } from 'wgpu-matrix';
+import { Vec4 } from 'wgpu-matrix';
 import Point from "./Point";
 import SurfaceMesh from "./SurfaceMesh";
 
-export const cone = (numSlices: number, height = 2, radius = 1, color?: Vec3) => {
-  const mesh = new SurfaceMesh();
+export const cone = (numSlices: number, height = 2, radius = 1, color?: Vec4) => {
+  const mesh = new SurfaceMesh(color);
   const numStacks = 2;
 
   // add top vertex

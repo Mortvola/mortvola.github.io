@@ -5,6 +5,11 @@ import { intersectTriangle } from '../Math';
 class SurfaceMesh {
   vertices: number[] = [];
   indexes: number[] = [];
+  color: Vec4;
+
+  constructor(color?: Vec4) {
+    this.color = color ?? vec4.create(0.3, 0.3, 0.3, 1.0);
+  }
 
   addVertex(point: Point, color?: Vec3): number {
     const c = color ?? vec3.create(point.x, point.y, point.z);

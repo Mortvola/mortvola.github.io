@@ -11,6 +11,8 @@ class CameraPlaneDragHandle extends Drawable {
 
   uniformBuffer: GPUBuffer;
 
+  colorBuffer: GPUBuffer;
+
   bindGroup2: GPUBindGroup;
 
   uniformBuffer2: GPUBuffer;
@@ -29,8 +31,14 @@ class CameraPlaneDragHandle extends Drawable {
     const bindGroupLayouts = this.pipeline.getBindGroupLayouts();
 
     this.uniformBuffer = gpu.device.createBuffer({
-      label: 'uniforms',
+      label: 'model Matrix',
       size: 16 * Float32Array.BYTES_PER_ELEMENT,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.colorBuffer = gpu.device.createBuffer({
+      label: 'color',
+      size: Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
@@ -39,17 +47,18 @@ class CameraPlaneDragHandle extends Drawable {
       layout: bindGroupLayouts[0],
       entries: [
         { binding: 0, resource: { buffer: this.uniformBuffer }},
+        { binding: 1, resource: { buffer: this.colorBuffer }},
       ],
     });
 
     this.uniformBuffer2 = gpu.device.createBuffer({
-      label: 'uniforms',
+      label: 'radius',
       size: Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
     this.bindGroup2 = gpu.device.createBindGroup({
-      label: 'DragHandle',
+      label: 'radius',
       layout: bindGroupLayouts[1],
       entries: [
         { binding: 0, resource: { buffer: this.uniformBuffer2 }},

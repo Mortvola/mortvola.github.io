@@ -12,7 +12,7 @@ struct VertexOut {
 @group(0) @binding(1) var<uniform> view: mat4x4f;
 
 @vertex
-fn vertex_main(vert: Vertex) -> VertexOut
+fn vertex_line(vert: Vertex) -> VertexOut
 {
   var output : VertexOut;
 
@@ -22,7 +22,7 @@ fn vertex_main(vert: Vertex) -> VertexOut
 }
 
 @fragment
-fn fragment_main(fragData: VertexOut) -> @location(0) vec4f
+fn fragment_line(fragData: VertexOut) -> @location(0) vec4f
 {
   return fragData.color;
 }

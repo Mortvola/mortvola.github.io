@@ -1,12 +1,14 @@
 import { mat4, vec3, Mat4, quat, Quat } from 'wgpu-matrix';
 import { getEulerAngles } from '../Math';
 
+export const rotationOrder: quat.RotationOrder = 'xyz';
+
 class SceneNode {
   transform = mat4.identity();
 
   translate = vec3.create(0, 0, 0);
 
-  qRotate = quat.fromEuler(0, 0, 0, 'xyz');
+  qRotate = quat.fromEuler(0, 0, 0, rotationOrder);
 
   angles: number[];
 
@@ -27,7 +29,7 @@ class SceneNode {
   }
 
   rotate(x: number, y: number, z: number) {
-    const q = quat.fromEuler(x, y, z, "xyz");
+    const q = quat.fromEuler(x, y, z, rotationOrder);
 
     this.qRotate = quat.multiply(this.qRotate, q);
 
@@ -35,7 +37,7 @@ class SceneNode {
   }
 
   setFromAngles(x: number, y: number, z: number) {
-    this.qRotate = quat.fromEuler(x, y, z, "xyz");
+    this.qRotate = quat.fromEuler(x, y, z, rotationOrder);
     this.angles = [x, y, z];
   }
 

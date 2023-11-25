@@ -16,6 +16,10 @@ interface DrawableInterface {
 
   tag: string;
 
+  setColor(color: Vec4): void;
+
+  getColor(): Float32Array;
+
   hitTest(origin: Vec4, vector: Vec4): { point: Vec4, t: number, drawable: DrawableInterface} | null;
 
   computeTransform(transform?: Mat4, prepend?: boolean): Mat4;

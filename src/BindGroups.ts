@@ -36,13 +36,13 @@ class BindGroups {
       const matrixBufferSize = 16 * Float32Array.BYTES_PER_ELEMENT;
 
       const projectionTransformBuffer = gpu.device.createBuffer({
-        label: 'uniforms',
+        label: 'projection Matrix',
         size: matrixBufferSize,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
       const viewTransformBuffer = gpu.device.createBuffer({
-        label: 'uniforms',
+        label: 'view Matrix',
         size: matrixBufferSize,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
