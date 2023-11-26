@@ -1,6 +1,6 @@
 import { gpu, bindGroups } from "../Renderer";
 import PipelineInterface from "./PipelineInterface";
-import shader from '../shaders/billboard.wgsl';
+import { billboardShader } from '../shaders/billboard';
 import DrawableInterface from "../Drawables/DrawableInterface";
 
 class BillboardPipeline implements PipelineInterface {
@@ -15,7 +15,7 @@ class BillboardPipeline implements PipelineInterface {
 
     const shaderModule = gpu.device.createShaderModule({
       label: 'Billboard',
-      code: shader,
+      code: billboardShader,
     })
     
     this.bindGroupLayouts = [

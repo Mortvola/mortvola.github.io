@@ -1,6 +1,6 @@
 import { gpu, bindGroups } from "../Renderer";
 import PipelineInterface from "./PipelineInterface";
-import shader from '../shaders/circle.wgsl';
+import { circleShader } from '../shaders/circle';
 import DrawableInterface from "../Drawables/DrawableInterface";
 
 const label = 'CirclePipeline';
@@ -17,7 +17,7 @@ class CirclePipeline implements PipelineInterface {
 
     const shaderModule = gpu.device.createShaderModule({
       label,
-      code: shader,
+      code: circleShader,
     })
     
     this.bindGroupLayouts = [

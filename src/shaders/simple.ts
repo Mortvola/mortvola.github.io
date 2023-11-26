@@ -1,6 +1,8 @@
+import { common } from "./common";
+
+export const simpleShader = /*wgsl*/`
 struct Vertex {
   @location(0) position: vec4f,
-  // @location(1) color: vec4f,
 }
 
 struct VertexOut {
@@ -8,11 +10,8 @@ struct VertexOut {
   @location(0) color : vec4f
 }
 
-@group(0) @binding(0) var<uniform> projectionMatrix: mat4x4f;
-@group(0) @binding(1) var<uniform> viewMatrix: mat4x4f;
-@group(0) @binding(2) var<uniform> cameraPos: vec4f;
+${common}
 
-@group(1) @binding(0) var<uniform> modelMatrix: mat4x4f;
 @group(1) @binding(1) var<uniform> color: vec4f;
 
 @vertex
@@ -33,3 +32,4 @@ fn fragment_simple(fragData: VertexOut) -> @location(0) vec4f
 {
   return fragData.color;
 }
+`

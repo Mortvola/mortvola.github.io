@@ -1,6 +1,6 @@
 import { gpu, bindGroups } from "../Renderer";
 import PipelineInterface from "./PipelineInterface";
-import shader from '../shaders/lit.wgsl';
+import { litShader } from '../shaders/lit';
 import DrawableInterface from "../Drawables/DrawableInterface";
 
 class LitPipeline implements PipelineInterface {
@@ -15,7 +15,7 @@ class LitPipeline implements PipelineInterface {
 
     const shaderModule = gpu.device.createShaderModule({
       label: 'lit',
-      code: shader,
+      code: litShader,
     })
     
     this.bindGroupLayouts = [

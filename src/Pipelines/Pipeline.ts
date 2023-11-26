@@ -1,6 +1,6 @@
 import { gpu, bindGroups } from "../Renderer";
 import PipelineInterface from "./PipelineInterface";
-import shader from '../shaders/simple.wgsl';
+import { simpleShader } from '../shaders/simple';
 import DrawableInterface from "../Drawables/DrawableInterface";
 
 class Pipeline implements PipelineInterface {
@@ -15,7 +15,7 @@ class Pipeline implements PipelineInterface {
 
     const shaderModule = gpu.device.createShaderModule({
       label: 'pipeline',
-      code: shader,
+      code: simpleShader,
     })
     
     this.bindGroupLayouts = [

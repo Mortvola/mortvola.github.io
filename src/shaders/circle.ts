@@ -1,12 +1,12 @@
+import { common } from "./common";
+
+export const circleShader = /*wgsl*/`
 struct VertexOut {
   @builtin(position) position : vec4f,
   @location(1) color: vec4f,
 }
 
-@group(0) @binding(0) var<uniform> projectionMatrix: mat4x4f;
-@group(0) @binding(1) var<uniform> view: mat4x4f;
-
-@group(1) @binding(0) var<uniform> model: mat4x4f;
+${common}
 
 struct Circle {
   radius: f32,
@@ -52,8 +52,8 @@ fn vertex_circle(@builtin(vertex_index) vertexIndex : u32) -> VertexOut
     y = (radius + thickness) * sin(radians + radiansPerSegment);
   }
 
-  output.position = projectionMatrix * view * model * vec4f(x, y, 0, 1);
-  // output.position = projectionMatrix * view * vec4f(x, y, 0, 1);
+  output.position = projectionMatrix * viewMatrix * modelMatrix * vec4f(x, y, 0, 1);
+  // output.position = projectionMatrix * viewMatrix * vec4f(x, y, 0, 1);
   /// output.position = projectionMatrix * vec4f(x, y, 0, 1);
   // output.position = vec4f(x, y, 0, 1);
   // output.position = projectionMatrix * vec4(
@@ -79,3 +79,4 @@ fn fragment_circle(fragData: VertexOut) -> @location(0) vec4f
 {
   return fragData.color;
 }
+`

@@ -3,6 +3,7 @@ import {
   makeShaderDataDefinitions,
   makeStructuredView,
 } from 'webgpu-utils';
+import { lights } from "./shaders/lights";
 
 type BindGroup = {
   bindGroup: GPUBindGroup,
@@ -10,19 +11,7 @@ type BindGroup = {
   buffer: GPUBuffer[],
 }
 
-const code = `
-struct PointLight {
-  position: vec4f,
-  color: vec4f,
-}
-
-struct Lights {
-  count: u32,
-  lights: array<PointLight, 4>,
-}
-`
-
-const defs = makeShaderDataDefinitions(code);
+const defs = makeShaderDataDefinitions(lights);
 export const lightsStructure = makeStructuredView(defs.structs.Lights);
 
 class BindGroups {

@@ -1,6 +1,6 @@
 import { bindGroups, gpu } from "../Renderer";
 import PipelineInterface from "./PipelineInterface";
-import lineShader from '../shaders/line.wgsl';
+import { lineShader } from '../shaders/line';
 import DrawableInterface from "../Drawables/DrawableInterface";
 
 class LinePipeline implements PipelineInterface {

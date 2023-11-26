@@ -1,12 +1,13 @@
+import { common } from "./common";
+
+export const billboardShader = /*wgsl*/`
 struct VertexOut {
   @builtin(position) position : vec4f,
   @location(0) texcoord: vec2f,
 }
 
-@group(0) @binding(0) var<uniform> projectionMatrix: mat4x4f;
-@group(0) @binding(1) var<uniform> view: mat4x4f;
+${common}
 
-@group(1) @binding(0) var<uniform> model: mat4x4f;
 @group(1) @binding(1) var<uniform> color: vec4f;
 
 @group(2) @binding(0) var<uniform> radius: f32;
@@ -36,7 +37,7 @@ fn vertex_billboard(@builtin(vertex_index) vertexIndex : u32) -> VertexOut
 
   // The fourth vector in the resulting matrix will be how
   // much a point at the origin will have been translated.
-  var pos = (view * model)[3];
+  var pos = (viewMatrix * modelMatrix)[3];
 
   output.position = projectionMatrix * vec4(
     pos.x + verts[vertexIndex].x * radius * pos.z,
@@ -59,3 +60,4 @@ fn fragment_billboard(fragData: VertexOut) -> @location(0) vec4f
 {
   return textureSample(ourTexture, ourSampler, fragData.texcoord);
 }
+`
