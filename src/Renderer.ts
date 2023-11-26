@@ -2,7 +2,7 @@ import {
   mat4, vec3, vec4, quat, Vec3, Vec4, Mat4, setDefaultType, Quat,
 } from 'wgpu-matrix';
 import { runInAction } from 'mobx';
-import BindGroups from "./BindGroups";
+import BindGroups, { lightsStructure } from "./BindGroups";
 import Gpu from "./Gpu";
 import {
   closestPointsBetweenRays, degToRad, getAngle,
@@ -425,16 +425,30 @@ class Renderer {
     const view = this.context.getCurrentTexture().createView();
 
     if (this.projection === 'Perspective') {
-      gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[0].buffer, 0, this.perspectiveTransform as Float32Array);      
+      gpu.device.queue.writeBuffer(bindGroups.camera.buffer[0], 0, this.perspectiveTransform as Float32Array);      
     }
     else {
-      gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[0].buffer, 0, this.orthographicTransform as Float32Array);      
+      gpu.device.queue.writeBuffer(bindGroups.camera.buffer[0], 0, this.orthographicTransform as Float32Array);      
     }
 
-    gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[1].buffer, 0, mat4.inverse(this.viewTransform)  as Float32Array);
+    const inverseViewtransform = mat4.inverse(this.viewTransform);
+    gpu.device.queue.writeBuffer(bindGroups.camera.buffer[1], 0, inverseViewtransform as Float32Array);
 
-    const position = vec4.transformMat4(vec4.create(0, 0, 0, 1), this.viewTransform);
-    gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[2].buffer, 0, position as Float32Array);
+    // Write the camera position
+
+    const cameraPosition = vec4.transformMat4(vec4.create(0, 0, 0, 1), this.viewTransform);
+    gpu.device.queue.writeBuffer(bindGroups.camera.buffer[2], 0, cameraPosition as Float32Array);
+
+    // Update the light information
+    lightsStructure.set({
+      count: 1,
+      lights: [{
+        position: vec4.transformMat4(vec4.create(-3, 3, -3, 1), inverseViewtransform),
+        color: vec4.create(1, 1, 1, 1),
+      }]
+    })
+
+    gpu.device.queue.writeBuffer(bindGroups.camera.buffer[3], 0, lightsStructure.arrayBuffer);
 
     const commandEncoder = gpu.device.createCommandEncoder();
 

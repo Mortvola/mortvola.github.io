@@ -1,13 +1,29 @@
 import { gpu } from "./Renderer";
+import {
+  makeShaderDataDefinitions,
+  makeStructuredView,
+} from 'webgpu-utils';
 
 type BindGroup = {
   bindGroup: GPUBindGroup,
   layout: GPUBindGroupLayout,
-  uniformBuffer: {
-    buffer: GPUBuffer,
-    size: number,
-  }[],
+  buffer: GPUBuffer[],
 }
+
+const code = `
+struct PointLight {
+  position: vec4f,
+  color: vec4f,
+}
+
+struct Lights {
+  count: u32,
+  lights: array<PointLight, 4>,
+}
+`
+
+const defs = makeShaderDataDefinitions(code);
+export const lightsStructure = makeStructuredView(defs.structs.Lights);
 
 class BindGroups {
   camera: BindGroup | null = null;
@@ -36,6 +52,13 @@ class BindGroups {
             visibility: GPUShaderStage.VERTEX,
             buffer: {},
           },
+          {
+            binding: 3,
+            visibility: GPUShaderStage.FRAGMENT,
+            buffer: {
+              type: "read-only-storage",
+            },
+          },
         ]
       })
     
@@ -59,32 +82,31 @@ class BindGroups {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
+      const lightsBuffer = gpu.device.createBuffer({
+        label: 'lights',
+        size: lightsStructure.arrayBuffer.byteLength,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+      });
+
       const cameraBindGroup = gpu.device.createBindGroup({
         label: 'camera',
-        layout: bindGroupLayout, // this.pipeline.getBindGroupLayout(0),
+        layout: bindGroupLayout,
         entries: [
           { binding: 0, resource: { buffer: projectionTransformBuffer }},
           { binding: 1, resource: { buffer: viewTransformBuffer }},
           { binding: 2, resource: { buffer: cameraPosBuffer }},
+          { binding: 3, resource: { buffer: lightsBuffer }},
         ],
       });
 
       this.camera = {
         bindGroup: cameraBindGroup,
         layout: bindGroupLayout,
-        uniformBuffer: [
-          {
-            buffer: projectionTransformBuffer,
-            size: matrixBufferSize,
-          },
-          {
-            buffer: viewTransformBuffer,
-            size: matrixBufferSize,
-          },
-          {
-            buffer: cameraPosBuffer,
-            size: Float32Array.BYTES_PER_ELEMENT,
-          }
+        buffer: [
+            projectionTransformBuffer,
+            viewTransformBuffer,
+            cameraPosBuffer,
+            lightsBuffer,
         ],
       }
     }

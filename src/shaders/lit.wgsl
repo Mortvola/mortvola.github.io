@@ -6,14 +6,25 @@ struct Vertex {
 struct VertexOut {
   @builtin(position) position : vec4f,
   @location(0) color : vec4f,
-  @location(1) worldPos: vec4f,
+  @location(1) fragPos: vec4f,
   @location(2) normal: vec4f,
-  @location(3) cameraPos: vec4f,
 }
 
 @group(0) @binding(0) var<uniform> projectionMatrix: mat4x4f;
 @group(0) @binding(1) var<uniform> viewMatrix: mat4x4f;
 @group(0) @binding(2) var<uniform> cameraPos: vec4f;
+
+struct PointLight {
+  position: vec4f,
+  color: vec4f,
+}
+
+struct Lights {
+  count: u32,
+  lights: array<PointLight, 4>,
+}
+
+@group(0) @binding(3) var<storage> pointLights: Lights;
 
 @group(1) @binding(0) var<uniform> modelMatrix: mat4x4f;
 @group(1) @binding(1) var<uniform> color: vec4f;
@@ -26,9 +37,9 @@ fn vertex_simple(vert: Vertex) -> VertexOut
   output.position = projectionMatrix * viewMatrix * modelMatrix * vert.position;
 
   output.color = color;
-  output.worldPos = modelMatrix * vert.position;
-  output.normal = modelMatrix * vert.normal;
-  output.cameraPos = cameraPos;
+  output.fragPos = viewMatrix * modelMatrix * vert.position;
+  output.normal = viewMatrix * modelMatrix * vert.normal;
+
   return output;
 }
 
@@ -36,20 +47,18 @@ fn vertex_simple(vert: Vertex) -> VertexOut
 fn fragment_simple(fragData: VertexOut) -> @location(0) vec4f
 {
   var ambientStrength = f32(0.1);
-  var lightColor = vec4f(1.0, 1.0, 1.0, 1.0);
-  var lightPos = vec4f(3.0, 3.0, 3.0, 1.0);
-  var lightDir = normalize(lightPos - fragData.worldPos);
-  var normal = normalize(fragData.normal);
   var specularStrength = 0.5;
-  var viewDir = normalize(fragData.cameraPos - fragData.worldPos);
+  var shininess = 32.0;
+
+  var normal = normalize(fragData.normal);
+  var viewDir = normalize(-fragData.fragPos);
+
+  var lightColor = pointLights.lights[0].color;
+  var lightDir = normalize(pointLights.lights[0].position - fragData.fragPos);
   var reflectDir = reflect(-lightDir, normal);
 
-  // var ambient = ambientStrength * lightColor;
-
   var diffuse = max(dot(normal, lightDir), 0.0);
-
-  var spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-  var specular = specularStrength * spec;
+  var specular = specularStrength * pow(max(dot(viewDir, reflectDir), 0.0), shininess);
 
   return (ambientStrength + diffuse + specular) * lightColor * fragData.color;
 }
