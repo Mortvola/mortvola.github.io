@@ -8,7 +8,7 @@ class SurfaceMesh {
   color: Vec4;
 
   constructor(color?: Vec4) {
-    this.color = color ?? vec4.create(0.3, 0.3, 0.3, 1.0);
+    this.color = color ?? vec4.create(0.8, 0.8, 0.8, 1.0);
   }
 
   addVertex(point: Point, color?: Vec3): number {

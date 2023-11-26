@@ -2,6 +2,8 @@ import { Vec4, Vec3, Mat4, Quat } from 'wgpu-matrix';
 import PipelineInterface from "../Pipelines/PipelineInterface";
 
 interface DrawableInterface {
+  uuid: string;
+
   render(passEncoder: GPURenderPassEncoder): void;
 
   pipeline: PipelineInterface;
@@ -16,6 +18,8 @@ interface DrawableInterface {
 
   tag: string;
 
+  angles: number[];
+
   setColor(color: Vec4): void;
 
   getColor(): Float32Array;
@@ -27,6 +31,14 @@ interface DrawableInterface {
   computeCentroid(): Vec4;
 
   getTransform(): Mat4;
+
+  getRotation(): Mat4;
+
+  rotate(x: number, y: number, z: number): void;
+
+  setFromAngles(x: number, y: number, z: number): void;
+
+  setQRotate(q: Quat): void;
 }
 
 export const isDrawableInterface = (r: unknown): r is DrawableInterface => (

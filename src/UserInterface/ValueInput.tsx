@@ -2,7 +2,7 @@ import React from 'react';
 import { Vec3 } from 'wgpu-matrix';
 import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
-import { degToRad, radToDeg } from './Math';
+import { degToRad, radToDeg } from '../Math';
 
 type PropsType = {
   values: Vec3,

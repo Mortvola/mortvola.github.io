@@ -1,18 +1,28 @@
 import React from 'react';
 import './App.scss';
-import { gpu, renderer, ProjectionType, SpaceOrientationType } from './Renderer';
+import { gpu, renderer, ProjectionType, SpaceOrientationType } from '../Renderer';
 import Transformations from './Transformations';
-import { StoreContext, store } from './state/Store';
-import Drawable from './Drawables/Drawable';
+import { StoreContext, store } from '../state/Store';
+import Drawable from '../Drawables/Drawable';
 import AddObjectMenu from './AddObjectMenu';
+import ObjectTree from './ObjectTree';
+import SceneNode from '../Drawables/SceneNode';
 
 const  App = () => {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const [projection, setProjection] = React.useState<ProjectionType | undefined>(renderer?.projection);
-  const [selected, setSelected] = React.useState<Drawable | null>(null);
+  const [selected, setSelected] = React.useState<SceneNode | null>(null);
 
-  const handleSelect = React.useCallback((mesh: Drawable | null) => {
-    setSelected(mesh);
+  const handleSelect = React.useCallback((node: SceneNode | null) => {
+    setSelected(node);
+  }, [])
+
+  const handleNodeSelect = React.useCallback((node: SceneNode | null) => {
+    if (node) {
+      renderer?.selectNode(node);
+    }
+
+    setSelected(node);
   }, [])
 
   React.useEffect(() => {
@@ -134,7 +144,10 @@ const  App = () => {
         renderer
           ? (
             <div className="App">
-              <Transformations drawable={selected}/>
+              <div className="sidebar">
+                <ObjectTree selected={selected} onSelect={handleNodeSelect} />
+                <Transformations node={selected} />
+              </div>
               <div className="canvas-wrapper">
                 <AddObjectMenu />
                 <select

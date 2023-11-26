@@ -1,5 +1,5 @@
 import React from 'react';
-import { renderer } from './Renderer';
+import { renderer } from '../Renderer';
 
 const AddObjectMenu: React.FC = () => {
   const [showMenu, setShowMenu] = React.useState<boolean>(false);

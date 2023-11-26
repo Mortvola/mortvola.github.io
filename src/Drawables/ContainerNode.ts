@@ -1,6 +1,7 @@
 import { Vec4, Mat4 } from 'wgpu-matrix';
 import DrawableInterface, { isDrawableInterface } from "./DrawableInterface";
 import SceneNode from "./SceneNode";
+import { makeObservable, observable, runInAction } from 'mobx';
 
 export type HitTestResult = {
   drawable: DrawableInterface,
@@ -10,6 +11,20 @@ export type HitTestResult = {
 
 class ContainerNode extends SceneNode {
   nodes: SceneNode[] = [];
+
+  constructor() {
+    super();
+
+    makeObservable(this, {
+      nodes: observable,
+    })
+  }
+
+  addNode(node: SceneNode) {
+    runInAction(() => {
+      this.nodes.push(node);
+    })
+  }
 
   updateTransforms(mat: Mat4) {
     this.nodes.forEach((drawable) => {
@@ -23,18 +38,18 @@ class ContainerNode extends SceneNode {
     })
   }
 
-  modelHitTest(origin: Vec4, ray: Vec4): HitTestResult | null {
+  modelHitTest(origin: Vec4, ray: Vec4, filter?: (node: DrawableInterface) => boolean): HitTestResult | null {
     let best: HitTestResult | null = null;
 
     for (let node of this.nodes) {
       let result;
       if (isDrawableInterface(node)) {
-        if (node.tag !== 'drag-camera-plane' && node.tag !== '') {
+        if (!filter || filter(node)) {
           result = node.hitTest(origin, ray)    
         }
       }
       else if (isContainerNode(node)) {
-        result = node.modelHitTest(origin, ray);
+        result = node.modelHitTest(origin, ray, filter);
       }
 
       if (result) {

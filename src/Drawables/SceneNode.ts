@@ -1,9 +1,11 @@
-import { mat4, vec3, Mat4, quat, Quat } from 'wgpu-matrix';
+import { mat4, vec3, Vec4, Mat4, quat, Quat } from 'wgpu-matrix';
 import { getEulerAngles } from '../Math';
 
 export const rotationOrder: quat.RotationOrder = 'xyz';
 
 class SceneNode {
+  uuid = crypto.randomUUID() as string;
+
   transform = mat4.identity();
 
   translate = vec3.create(0, 0, 0);
@@ -62,6 +64,10 @@ class SceneNode {
     }
 
     return this.transform;
+  }
+
+  computeCentroid(): Vec4 {
+    throw new Error('not implementd');
   }
 }
 

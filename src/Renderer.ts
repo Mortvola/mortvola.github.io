@@ -9,7 +9,6 @@ import {
   intersectionPlane, normalizeDegrees,
 } from "./Math";
 import Mesh from "./Drawables/Mesh";
-import Models from './Models';
 import CartesianAxes from './CartesianAxes';
 import { uvSphere } from './Drawables/uvsphere';
 import { box } from './Drawables/box';
@@ -19,13 +18,13 @@ import DragHandlesPass from './DragHandlesPass';
 import RenderPass from './RenderPass';
 import CameraPlaneDragHandle from './Drawables/CameraPlaneDragHandle';
 import { plane } from './Drawables/plane';
-import Drawable from './Drawables/Drawable';
 import { cylinder } from './Drawables/cylinder';
 import { cone } from './Drawables/cone';
 import ContainerNode from './Drawables/ContainerNode';
 import { torus } from './Drawables/torus';
-import { rotationOrder } from './Drawables/SceneNode';
+import SceneNode, { rotationOrder } from './Drawables/SceneNode';
 import DrawableInterface from './Drawables/DrawableInterface';
+import Light, { isLight } from './Drawables/LIght';
 
 export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron' | 'Cylinder' | 'Cone';
 
@@ -43,7 +42,7 @@ setDefaultType(Float32Array);
 
 type HitTestInfo = {
   point : Vec4,
-  mesh: Drawable,
+  mesh: DrawableInterface,
   translate: Vec4,
 }
 
@@ -61,7 +60,7 @@ type DragInfo = {
   centroid: Vec4,
   initialDistance: number,
   objects: {
-    drawable: Drawable,
+    drawable: SceneNode,
     translate: Vec3,
     scale: Vec3,
     qRotate: Quat,
@@ -87,7 +86,7 @@ class Renderer {
 
   context: GPUCanvasContext | null = null;
 
-  document = new Models();
+  document = new ContainerNode();
 
   near = 0.125;
   
@@ -127,7 +126,7 @@ class Renderer {
 
   spaceOrientation: SpaceOrientationType = 'Global';
 
-  onSelectCallback: ((drawable: Drawable | null) => void) | null = null;
+  onSelectCallback: ((drawable: DrawableInterface | null) => void) | null = null;
 
   constructor(cameraPlaneDragHandle: CameraPlaneDragHandle) {
     this.mainRenderPass.addDrawable(new CartesianAxes('line'));
@@ -165,33 +164,34 @@ class Renderer {
 
     this.dragModel = new ContainerNode();
 
-    this.dragModel.nodes.push(xAxisPlaneDragHandle)
-    this.dragModel.nodes.push(yAxisPlaneDragHandle)
-    this.dragModel.nodes.push(zAxisPlaneDragHandle)
-    this.dragModel.nodes.push(xAxis);
-    this.dragModel.nodes.push(yAxis);
-    this.dragModel.nodes.push(zAxis);
-    this.dragModel.nodes.push(cameraPlaneDragHandle);
+    this.dragModel.addNode(xAxisPlaneDragHandle)
+    this.dragModel.addNode(yAxisPlaneDragHandle)
+    this.dragModel.addNode(zAxisPlaneDragHandle)
+    this.dragModel.addNode(xAxis);
+    this.dragModel.addNode(yAxis);
+    this.dragModel.addNode(zAxis);
+    this.dragModel.addNode(cameraPlaneDragHandle);
 
     let t = new Mesh(torus(32, 8, 2, 0.125, xColor), 'pipeline');
     t.rotate(0, degToRad(90), 0);
     t.tag = 'drag-x-rotate';
-    this.dragModel.nodes.push(t);
+    this.dragModel.addNode(t);
 
     t = new Mesh(torus(32, 8, 2, 0.125, zColor), 'pipeline');
     t.tag = 'drag-z-rotate';
-    this.dragModel.nodes.push(t);
+    this.dragModel.addNode(t);
 
     t = new Mesh(torus(32, 8, 2, 0.125, yColor), 'pipeline');
     t.rotate(degToRad(90), 0, 0);
     t.tag = 'drag-y-rotate';
-    this.dragModel.nodes.push(t);
-
-    // this.dragModel.nodes.push(new Circle(2, 0.1, 'circle'));
+    this.dragModel.addNode(t);
 
     this.dragHandlesPass.addDrawables(this.dragModel);
 
-    this.document.meshes = [];
+    const light = new Light();
+    light.translate = vec3.create(-3, 3, -3);
+
+    this.document.addNode(light);
   }
 
   createAxis(tag: string, color: Vec3): ContainerNode {
@@ -209,9 +209,9 @@ class Renderer {
     coneHandle.translate = vec3.create(0, 3.5, 0);
     coneHandle.tag = `drag-${tag}`;
 
-    node.nodes.push(axisDragHandle);
-    node.nodes.push(boxHandle);
-    node.nodes.push(coneHandle);
+    node.addNode(axisDragHandle);
+    node.addNode(boxHandle);
+    node.addNode(coneHandle);
 
     return node;
   }
@@ -254,8 +254,13 @@ class Renderer {
     this.initialized = true;
   }
 
-  onSelect(callback: (drawable: Drawable | null) => void) {
+  onSelect(callback: (drawable: DrawableInterface | null) => void) {
     this.onSelectCallback = callback;
+  }
+
+  selectNode(node: SceneNode) {
+    this.selected.clear();
+    this.selected.addItem(node);
   }
 
   addObject(type: ObjectTypes) {
@@ -280,7 +285,7 @@ class Renderer {
         throw new Error('invalid type')
     }
     
-    this.document.meshes.push(mesh);
+    this.document.addNode(mesh);
 
     this.mainRenderPass.addDrawable(mesh);
   }
@@ -387,8 +392,14 @@ class Renderer {
       throw new Error('uniformBuffer is not set');
     }
 
-    this.document.meshes.forEach((mesh) => {
-      mesh.computeTransform()
+    const lights: Light[] = [];
+
+    this.document.nodes.forEach((node) => {
+      node.computeTransform()
+
+      if (isLight(node)) {
+        lights.push(node);
+      }
     })
 
     if (this.context.canvas.width !== this.renderedDimensions[0]
@@ -441,12 +452,15 @@ class Renderer {
 
     // Update the light information
     lightsStructure.set({
-      count: 1,
-      lights: [{
-        position: vec4.transformMat4(vec4.create(-3, 3, -3, 1), inverseViewtransform),
-        color: vec4.create(1, 1, 1, 1),
-      }]
-    })
+      count: lights.length,
+      lights: lights.map((light) => ({
+        position: vec4.transformMat4(
+          vec4.create(light.translate[0], light.translate[1], light.translate[2], 1),
+          inverseViewtransform,
+        ),
+        color: light.lightColor,
+      })),
+    });
 
     gpu.device.queue.writeBuffer(bindGroups.camera.buffer[3], 0, lightsStructure.arrayBuffer);
 
@@ -469,7 +483,7 @@ class Renderer {
       mat4.scale(mat, vec3.create(scale, scale, scale), mat)
 
       if (this.spaceOrientation === 'Local') {
-        mat4.multiply(mat, this.selected.selection[0].drawable.getRotation(), mat);
+        mat4.multiply(mat, this.selected.selection[0].node.getRotation(), mat);
       }
 
       this.dragModel.updateTransforms(mat)
@@ -516,7 +530,7 @@ class Renderer {
     })
   }
 
-  hitTest(x: number, y: number): { point: Vec4, mesh: Drawable} | null {
+  hitTest(x: number, y: number): { point: Vec4, mesh: DrawableInterface } | null {
     if (this.selected.selection.length > 0) {
       // Check for hit test of drag handle in screen space
       const p = this.ndcToCameraSpace(x, y);
@@ -538,10 +552,10 @@ class Renderer {
           centroid: this.selected.getCentroid(),
           initialDistance: vec3.distance(this.selected.getCentroid(), intersection!),
           objects: this.selected.selection.map((object) => ({
-            drawable: object.drawable,
-            translate: object.drawable.translate,
-            scale: object.drawable.scale,
-            qRotate: quat.copy(object.drawable.qRotate),
+            drawable: object.node,
+            translate: object.node.translate,
+            scale: object.node.scale,
+            qRotate: quat.copy(object.node.qRotate),
           }))
         }
 
@@ -549,7 +563,11 @@ class Renderer {
       }
 
       const { ray, origin } = this.computeHitTestRay(x, y);
-      const best = this.dragModel.modelHitTest(origin, ray);
+      const best = this.dragModel.modelHitTest(
+        origin,
+        ray,
+        (node: DrawableInterface) => (node.tag !== 'drag-camera-plane' && node.tag !== ''),
+      );
 
       if (best !== null) {
         let planeNormal: Vec4 | null = null;
@@ -627,15 +645,15 @@ class Renderer {
 
         if (this.spaceOrientation === 'Local' && this.selected.selection.length > 0) {
           if (vector) {
-            vec4.transformMat4(vector, this.selected.selection[0].drawable.getRotation(), vector);
+            vec4.transformMat4(vector, this.selected.selection[0].node.getRotation(), vector);
           }
 
           if (planeNormal) {
-            vec4.transformMat4(planeNormal, this.selected.selection[0].drawable.getRotation(), planeNormal);
+            vec4.transformMat4(planeNormal, this.selected.selection[0].node.getRotation(), planeNormal);
           }
 
           if (up) {
-            vec4.transformMat4(up, this.selected.selection[0].drawable.getRotation(), up);
+            vec4.transformMat4(up, this.selected.selection[0].node.getRotation(), up);
           }
         }
           
@@ -660,10 +678,10 @@ class Renderer {
             centroid: this.selected.getCentroid(),
             initialDistance: vec3.distance(this.selected.getCentroid(), best.point),
             objects: this.selected.selection.map((object) => ({
-              drawable: object.drawable,
-              translate: vec3.copy(object.drawable.translate),
-              scale: vec3.copy(object.drawable.scale),
-              qRotate: quat.copy(object.drawable.qRotate),
+              drawable: object.node,
+              translate: vec3.copy(object.node.translate),
+              scale: vec3.copy(object.node.scale),
+              qRotate: quat.copy(object.node.qRotate),
             }))
           }  
 
@@ -673,26 +691,8 @@ class Renderer {
     }
 
     // Check for hits against the other objects
-    const { ray, origin } = this.computeHitTestRay(x, y);
-    let best: {
-      drawable: Drawable,
-      t: number,
-      point: Vec3
-    } | null = null;
-  
-    for (let mesh of this.document.meshes) {
-      const result = mesh.hitTest(origin, ray);
-
-      if (result) {
-        if (best === null || result.t < best.t) {
-          best = {
-            drawable: result.drawable,
-            t: result.t,
-            point: result.point,
-          }
-        }
-      }
-    }
+    const { ray, origin } = this.computeHitTestRay(x, y);  
+    const best = this.document.modelHitTest(origin, ray);
 
     if (best) {
       return {
@@ -704,7 +704,7 @@ class Renderer {
     return null;
   }
 
-  scaleObject(drawable: Drawable, originalScale: Vec3, scale: Vec3) {
+  scaleObject(drawable: SceneNode, originalScale: Vec3, scale: Vec3) {
     const s = mat4.identity();
 
     if (this.spaceOrientation === 'Global') {

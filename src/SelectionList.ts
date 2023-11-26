@@ -1,9 +1,9 @@
 import { vec4, Vec4 } from 'wgpu-matrix';
 import { makeObservable, observable } from 'mobx';
-import Drawable from './Drawables/Drawable';
+import SceneNode from './Drawables/SceneNode';
 
 type SelectedItem = {
-  drawable: Drawable,
+  node: SceneNode,
   centroid: Vec4,
 }
 
@@ -16,15 +16,15 @@ class SelectionList {
     })
   }
 
-  addItem(drawable: Drawable) {
+  addItem(node: SceneNode) {
     // Determine if mesh is already in the list. If so, don't add it.
-    const result = this.selection.find((entry) => entry.drawable === drawable);
+    const result = this.selection.find((entry) => entry.node === node);
 
     if (!result) {
-      const centroid = drawable.computeCentroid();
+      const centroid = node.computeCentroid();
 
       this.selection.push({
-        drawable,
+        node,
         centroid,
       })  
     }
@@ -33,8 +33,8 @@ class SelectionList {
   // Returns centroid of all selected objects in world space coordinates.
   getCentroid(): Vec4 {
     const sum = this.selection.reduce((accum, item) => {
-      const centroid = vec4.transformMat4(item.centroid, item.drawable.getTransform());
-      
+      const centroid = vec4.transformMat4(item.centroid, item.node.getTransform());
+
       return vec4.add(centroid, accum);
     }, vec4.create(0, 0, 0, 0))
 

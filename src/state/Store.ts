@@ -1,8 +1,6 @@
 import { createContext, useContext } from "react";
-import Models from "../Models";
 
 class Store implements StoreInterface {
-  document = new Models();
 }
 
 const store = new Store();
