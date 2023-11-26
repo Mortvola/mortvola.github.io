@@ -262,19 +262,19 @@ class Renderer {
     let mesh: Mesh;
     switch (type) {
       case 'Box':
-        mesh = new Mesh(box(2, 2, 2), 'pipeline');
+        mesh = new Mesh(box(2, 2, 2), 'lit');
         break;
       case 'UVSphere':
-        mesh = new Mesh(uvSphere(8, 8), 'pipeline');
+        mesh = new Mesh(uvSphere(8, 8), 'lit');
         break;
       case 'Tetrahedron':
-        mesh = new Mesh(tetrahedron(), 'pipeline');
+        mesh = new Mesh(tetrahedron(), 'lit');
         break;
       case 'Cylinder':
-        mesh = new Mesh(cylinder(8), 'pipeline');
+        mesh = new Mesh(cylinder(8), 'lit');
         break;
       case 'Cone':
-        mesh = new Mesh(cone(8), 'pipeline');
+        mesh = new Mesh(cone(8), 'lit');
         break;
       default:
         throw new Error('invalid type')
@@ -432,6 +432,9 @@ class Renderer {
     }
 
     gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[1].buffer, 0, mat4.inverse(this.viewTransform)  as Float32Array);
+
+    const position = vec4.transformMat4(vec4.create(0, 0, 0, 1), this.viewTransform);
+    gpu.device.queue.writeBuffer(bindGroups.camera.uniformBuffer[2].buffer, 0, position as Float32Array);
 
     const commandEncoder = gpu.device.createCommandEncoder();
 

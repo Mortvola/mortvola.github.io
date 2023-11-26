@@ -51,13 +51,8 @@ class Pipeline implements PipelineInterface {
             offset: 0,
             format: "float32x4" as GPUVertexFormat,
           },
-          {
-            shaderLocation: 1, // color
-            offset: 16,
-            format: "float32x4" as GPUVertexFormat,
-          },
         ],
-        arrayStride: 32,
+        arrayStride: 16,
         stepMode: "vertex",
       },
     ];

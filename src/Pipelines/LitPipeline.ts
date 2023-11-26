@@ -1,9 +1,9 @@
 import { gpu, bindGroups } from "../Renderer";
 import PipelineInterface from "./PipelineInterface";
-import shader from '../shaders/simple.wgsl';
+import shader from '../shaders/lit.wgsl';
 import DrawableInterface from "../Drawables/DrawableInterface";
 
-class DragHandlesPipeline implements PipelineInterface {
+class LitPipeline implements PipelineInterface {
   pipeline: GPURenderPipeline;
 
   bindGroupLayouts: GPUBindGroupLayout[] = [];
@@ -14,13 +14,13 @@ class DragHandlesPipeline implements PipelineInterface {
     }
 
     const shaderModule = gpu.device.createShaderModule({
-      label: 'pipeline',
+      label: 'lit',
       code: shader,
     })
     
     this.bindGroupLayouts = [
       gpu.device.createBindGroupLayout({
-        label: 'Pipeline pipeline',
+        label: 'lit',
         entries: [
           {
             binding: 0,
@@ -55,6 +55,17 @@ class DragHandlesPipeline implements PipelineInterface {
         arrayStride: 16,
         stepMode: "vertex",
       },
+      {
+        attributes: [
+          {
+            shaderLocation: 1, // normal
+            offset: 0,
+            format: "float32x4" as GPUVertexFormat,
+          }
+        ],
+        arrayStride: 16,
+        stepMode: "vertex",
+      }
     ];
     
     const pipelineDescriptor: GPURenderPipelineDescriptor = {
@@ -74,7 +85,7 @@ class DragHandlesPipeline implements PipelineInterface {
       },
       primitive: {
         topology: "triangle-list",
-        cullMode: "none",
+        cullMode: "back",
         frontFace: "ccw",
       },
       depthStencil: {
@@ -101,4 +112,4 @@ class DragHandlesPipeline implements PipelineInterface {
   }
 }
 
-export default DragHandlesPipeline;
+export default LitPipeline;

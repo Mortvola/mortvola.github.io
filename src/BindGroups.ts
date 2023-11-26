@@ -19,6 +19,7 @@ class BindGroups {
   createCameraBindGroups() {
     if (gpu) {
       const bindGroupLayout = gpu.device.createBindGroupLayout({
+        label: 'camera',
         entries: [
           {
             binding: 0,
@@ -27,6 +28,11 @@ class BindGroups {
           },
           {
             binding: 1,
+            visibility: GPUShaderStage.VERTEX,
+            buffer: {},
+          },
+          {
+            binding: 2,
             visibility: GPUShaderStage.VERTEX,
             buffer: {},
           },
@@ -47,12 +53,19 @@ class BindGroups {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
+      const cameraPosBuffer = gpu.device.createBuffer({
+        label: 'camera position',
+        size: 4 * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+
       const cameraBindGroup = gpu.device.createBindGroup({
-        label: 'bind group for projection matrix',
+        label: 'camera',
         layout: bindGroupLayout, // this.pipeline.getBindGroupLayout(0),
         entries: [
           { binding: 0, resource: { buffer: projectionTransformBuffer }},
           { binding: 1, resource: { buffer: viewTransformBuffer }},
+          { binding: 2, resource: { buffer: cameraPosBuffer }},
         ],
       });
 
@@ -68,6 +81,10 @@ class BindGroups {
             buffer: viewTransformBuffer,
             size: matrixBufferSize,
           },
+          {
+            buffer: cameraPosBuffer,
+            size: Float32Array.BYTES_PER_ELEMENT,
+          }
         ],
       }
     }

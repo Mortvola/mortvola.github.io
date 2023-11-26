@@ -1,4 +1,4 @@
-import { gpu } from "../Renderer";
+import { bindGroups, gpu } from "../Renderer";
 import PipelineInterface from "./PipelineInterface";
 import lineShader from '../shaders/line.wgsl';
 import DrawableInterface from "../Drawables/DrawableInterface";
@@ -18,25 +18,11 @@ class LinePipeline implements PipelineInterface {
       code: lineShader,
     })
 
-    this.bindGroupLayouts = [
-      gpu.device.createBindGroupLayout({
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {},
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.VERTEX,
-            buffer: {},
-          },
-        ]
-      })
-    ]
-
     const pipelineLayout = gpu.device.createPipelineLayout({
-      bindGroupLayouts: this.bindGroupLayouts,
+      label: 'line',
+      bindGroupLayouts: [
+        bindGroups.camera!.layout,
+      ],
     });
 
     const vertexBufferLayout: GPUVertexBufferLayout[] = [
@@ -59,6 +45,7 @@ class LinePipeline implements PipelineInterface {
     ];    
     
     const pipelineDescriptor: GPURenderPipelineDescriptor = {
+      label: 'line',
       vertex: {
         module: shaderModule,
         entryPoint: "vertex_line",

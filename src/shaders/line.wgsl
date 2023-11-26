@@ -10,6 +10,7 @@ struct VertexOut {
 
 @group(0) @binding(0) var<uniform> projectionMatrix: mat4x4f;
 @group(0) @binding(1) var<uniform> view: mat4x4f;
+@group(0) @binding(2) var<uniform> cameraPos: vec4f;
 
 @vertex
 fn vertex_line(vert: Vertex) -> VertexOut

@@ -30,6 +30,63 @@ class SurfaceMesh {
     this.addTriangle(v1, v2, v3);
   }
 
+  generateBuffers() {
+    let verts: number[] = [];
+    let indices: number[] = [];
+    let normals: number[] = [];
+
+    for (let i = 0; i < this.indexes.length; i += 3) {
+      const index0 = this.indexes[i + 0] * 8;
+      const index1 = this.indexes[i + 1] * 8;
+      const index2 = this.indexes[i + 2] * 8;
+
+      const vertexA = vec3.create(
+        this.vertices[index0 + 0],
+        this.vertices[index0 + 1],
+        this.vertices[index0 + 2],
+      );
+
+      const vertexB = vec3.create(
+        this.vertices[index1 + 0],
+        this.vertices[index1 + 1],
+        this.vertices[index1 + 2],
+      );
+
+      const vertexC = vec3.create(
+        this.vertices[index2 + 0],
+        this.vertices[index2 + 1],
+        this.vertices[index2 + 2],
+      );
+
+      const v1 = vec3.subtract(vertexA, vertexB);
+      const v2 = vec3.subtract(vertexC, vertexB);
+
+      const normal = vec3.normalize(vec3.cross(v2, v1));
+
+      verts = verts.concat([
+        vertexA[0], vertexA[1], vertexA[2], 1.0,
+        vertexB[0], vertexB[1], vertexB[2], 1.0,
+        vertexC[0], vertexC[1], vertexC[2], 1.0,
+      ]);
+
+      normals = normals.concat([
+        normal[0], normal[1], normal[2], 0.0,
+        normal[0], normal[1], normal[2], 0.0,
+        normal[0], normal[1], normal[2], 0.0,
+      ])
+
+      indices = indices.concat([
+        i + 0, i + 1, i + 2,
+      ])
+    }
+
+    return {
+      vertices: verts,
+      normals,
+      indices,
+    }
+  }
+
   hitTest(origin: Vec3, ray: Vec3) {
     for (let i = 0; i < this.indexes.length; i += 3) {
       const index0 = this.indexes[i + 0] * 8;

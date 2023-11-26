@@ -11,6 +11,8 @@ class Mesh extends Drawable {
 
   vertexBuffer: GPUBuffer;
 
+  normalBuffer: GPUBuffer;
+
   indexBuffer: GPUBuffer;
 
   bindGroup: GPUBindGroup;
@@ -29,27 +31,41 @@ class Mesh extends Drawable {
     this.mesh = mesh;
     this.setColor(mesh.color);
 
+    const { vertices, normals, indices } = this.mesh.generateBuffers();
+
     this.vertexBuffer = gpu.device.createBuffer({
-      size: this.mesh.vertices.length * Float32Array.BYTES_PER_ELEMENT,
+      size: vertices.length * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.VERTEX,
       mappedAtCreation: true,
     });  
 
     {
       const mapping = new Float32Array(this.vertexBuffer.getMappedRange());
-      mapping.set(this.mesh.vertices, 0);
+      mapping.set(vertices, 0);
       this.vertexBuffer.unmap();  
     }
-  
+
+    this.normalBuffer = gpu.device.createBuffer({
+      size: normals.length * Float32Array.BYTES_PER_ELEMENT,
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true,
+    });  
+
+    {
+      const mapping = new Float32Array(this.normalBuffer.getMappedRange());
+      mapping.set(normals, 0);
+      this.normalBuffer.unmap();  
+    }
+
     this.indexBuffer = gpu.device.createBuffer({
-      size: (this.mesh.indexes.length * Uint16Array.BYTES_PER_ELEMENT + 3) & ~3, // Make sure it is a multiple of four
+      size: (indices.length * Uint16Array.BYTES_PER_ELEMENT + 3) & ~3, // Make sure it is a multiple of four
       usage: GPUBufferUsage.INDEX,
       mappedAtCreation: true,
     })
 
     {
       const mapping = new Uint16Array(this.indexBuffer.getMappedRange());
-      mapping.set(this.mesh.indexes, 0);
+      mapping.set(indices, 0);
       this.indexBuffer.unmap();  
     }
 
@@ -99,8 +115,10 @@ class Mesh extends Drawable {
     passEncoder.setBindGroup(1, this.bindGroup);
 
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
+    passEncoder.setVertexBuffer(1, this.normalBuffer);
+
     passEncoder.setIndexBuffer(this.indexBuffer, "uint16");
-    passEncoder.drawIndexed(this.mesh.indexes.length);  
+    passEncoder.drawIndexed(this.mesh.indexes.length);
   }
 
   hitTest(origin: Vec4, vector: Vec4): { point: Vec4, t: number, drawable: Drawable} | null {
