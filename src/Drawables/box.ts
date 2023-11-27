@@ -19,12 +19,12 @@ export const box = (width = 2, height = 2, depth = 2, color?: Vec4) => {
   mesh.addVertex(new Point(-x, -y, -z), color);
   mesh.addVertex(new Point(-x, y, -z), color);
 
-  mesh.addQuad(0, 1, 2, 3); // front
-  mesh.addQuad(4, 5, 6, 7); // back
-  mesh.addQuad(0, 3, 4, 7); // top
-  mesh.addQuad(2, 1, 6, 5); // bottom
-  mesh.addQuad(0, 7, 6, 1); // left
-  mesh.addQuad(3, 2, 5, 4); // left
+  mesh.addFace([0, 1, 2, 3]); // front
+  mesh.addFace([4, 5, 6, 7]); // back
+  mesh.addFace([0, 3, 4, 7]); // top
+  mesh.addFace([2, 1, 6, 5]); // bottom
+  mesh.addFace([0, 7, 6, 1]); // left
+  mesh.addFace([3, 2, 5, 4]); // left
 
   return mesh;
 }

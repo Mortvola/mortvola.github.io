@@ -49,7 +49,7 @@ class LitPipeline implements PipelineInterface {
           {
             shaderLocation: 0, // position
             offset: 0,
-            format: "float32x4" as GPUVertexFormat,
+            format: "float32x4",
           },
         ],
         arrayStride: 16,
@@ -60,7 +60,7 @@ class LitPipeline implements PipelineInterface {
           {
             shaderLocation: 1, // normal
             offset: 0,
-            format: "float32x4" as GPUVertexFormat,
+            format: "float32x4",
           }
         ],
         arrayStride: 16,

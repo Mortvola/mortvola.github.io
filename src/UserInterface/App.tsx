@@ -7,6 +7,8 @@ import Drawable from '../Drawables/Drawable';
 import AddObjectMenu from './AddObjectMenu';
 import ObjectTree from './ObjectTree';
 import SceneNode from '../Drawables/SceneNode';
+import UploadFileButton from './UploadFileButton';
+import LoadFbx from './LoadFbx';
 
 const  App = () => {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
@@ -158,9 +160,12 @@ const  App = () => {
                   <option value="Global">Global</option>
                   <option value="Local">Local</option>
                 </select>
-                <button type="button" className="settings-button" onClick={handleProjectionClick}>
-                  {projection}
-                </button>
+                <div className="upper-right">
+                  <button type="button" className="settings-button" onClick={handleProjectionClick}>
+                    {projection}
+                  </button>
+                  <LoadFbx />
+                </div>
                 <canvas
                   ref={canvasRef}
                   onPointerDown={handlePointerDown}

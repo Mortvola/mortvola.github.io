@@ -18,10 +18,10 @@ export const tetrahedron = (color?: Vec4) => {
   const v3 = mesh.addVertex(new Point(b, -a, 0));
 
   // add the 4 faces
-  mesh.addTriangle(v0, v1, v2);
-  mesh.addTriangle(v0, v2, v3);
-  mesh.addTriangle(v0, v3, v1);
-  mesh.addTriangle(v3, v2, v1);
+  mesh.addFace([v0, v1, v2]);
+  mesh.addFace([v0, v2, v3]);
+  mesh.addFace([v0, v3, v1]);
+  mesh.addFace([v3, v2, v1]);
 
   return mesh;
 }

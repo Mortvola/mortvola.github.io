@@ -21,6 +21,8 @@ class Mesh extends Drawable {
 
   uniformBuffer: GPUBuffer;
 
+  indexFormat: GPUIndexFormat = "uint16";
+
   constructor(mesh: SurfaceMesh, pipelineType: PipelineTypes) {
     super(pipelineType)
   
@@ -57,16 +59,35 @@ class Mesh extends Drawable {
       this.normalBuffer.unmap();  
     }
 
-    this.indexBuffer = gpu.device.createBuffer({
-      size: (indices.length * Uint16Array.BYTES_PER_ELEMENT + 3) & ~3, // Make sure it is a multiple of four
-      usage: GPUBufferUsage.INDEX,
-      mappedAtCreation: true,
-    })
+    if (indices.length > 0xFFFF) {
+      this.indexFormat = "uint32";
 
-    {
-      const mapping = new Uint16Array(this.indexBuffer.getMappedRange());
-      mapping.set(indices, 0);
-      this.indexBuffer.unmap();  
+      this.indexBuffer = gpu.device.createBuffer({
+        size: (indices.length * Uint32Array.BYTES_PER_ELEMENT + 3) & ~3, // Make sure it is a multiple of four
+        usage: GPUBufferUsage.INDEX,
+        mappedAtCreation: true,
+      })
+  
+      {
+        const mapping = new Uint32Array(this.indexBuffer.getMappedRange());
+        mapping.set(indices, 0);
+        this.indexBuffer.unmap();  
+      }  
+    }
+    else {
+      this.indexFormat = "uint16";
+
+      this.indexBuffer = gpu.device.createBuffer({
+        size: (indices.length * Uint16Array.BYTES_PER_ELEMENT + 3) & ~3, // Make sure it is a multiple of four
+        usage: GPUBufferUsage.INDEX,
+        mappedAtCreation: true,
+      })
+  
+      {
+        const mapping = new Uint16Array(this.indexBuffer.getMappedRange());
+        mapping.set(indices, 0);
+        this.indexBuffer.unmap();  
+      }  
     }
 
     const bindGroupLayouts = this.pipeline.getBindGroupLayouts();
@@ -117,7 +138,7 @@ class Mesh extends Drawable {
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.setVertexBuffer(1, this.normalBuffer);
 
-    passEncoder.setIndexBuffer(this.indexBuffer, "uint16");
+    passEncoder.setIndexBuffer(this.indexBuffer, this.indexFormat);
     passEncoder.drawIndexed(this.mesh.indexes.length);
   }
 

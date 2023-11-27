@@ -13,7 +13,7 @@ export const plane = (width: number, height: number, color?: Vec4) => {
   mesh.addVertex(new Point(x, -y, 0.0), color)
   mesh.addVertex(new Point(x, y, 0), color);
 
-  mesh.addQuad(0, 1, 2, 3);
+  mesh.addFace([0, 1, 2, 3]);
 
   return mesh;
 }

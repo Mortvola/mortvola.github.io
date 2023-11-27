@@ -5,6 +5,7 @@ import { intersectTriangle } from '../Math';
 class SurfaceMesh {
   vertices: number[] = [];
   indexes: number[] = [];
+  normals: number[] = [];
   color: Vec4;
 
   constructor(color?: Vec4) {
@@ -21,13 +22,43 @@ class SurfaceMesh {
     return (this.vertices.length / 8) - 1;
   }
 
-  addTriangle(v0: number, v1: number, v2: number) {
-    this.indexes = this.indexes.concat([v0, v1, v2]);
-  }
+  addFace(vertices: number[], normals?: number[]) {
+    if (vertices.length === 3) {
+      this.indexes = this.indexes.concat(vertices);
 
-  addQuad(v0: number, v1: number, v2: number, v3: number) {
-    this.addTriangle(v0, v1, v3);
-    this.addTriangle(v1, v2, v3);
+      if (normals) {
+        if (normals.length !== 3 * 3) {
+          throw new Error('normals to vertices mismatch');
+        }
+
+        this.normals = this.normals.concat(normals);
+      }
+    }
+    else if (vertices.length === 4) {
+      let normals1: number[] | undefined = undefined;
+      let normals2: number[] | undefined = undefined;
+
+      if (normals) {
+        if (normals.length !== 4 * 3) {
+          throw new Error('normals to vertices mismatch');
+        }
+
+        normals1 = [
+          normals[0 + 0], normals[0 + 1], normals[0 + 2],
+          normals[3 + 0], normals[3 + 1], normals[3 + 2],
+          normals[9 + 0], normals[9 + 1], normals[9 + 2],
+        ];
+
+        normals2 = [
+          normals[3 + 0], normals[3 + 1], normals[3 + 2],
+          normals[6 + 0], normals[6 + 1], normals[6 + 2],
+          normals[9 + 0], normals[9 + 1], normals[9 + 2],
+        ];
+      }
+
+      this.addFace([vertices[0], vertices[1], vertices[3]], normals1);
+      this.addFace([vertices[1], vertices[2], vertices[3]], normals2);  
+    }
   }
 
   generateBuffers() {
@@ -40,40 +71,53 @@ class SurfaceMesh {
       const index1 = this.indexes[i + 1] * 8;
       const index2 = this.indexes[i + 2] * 8;
 
-      const vertexA = vec3.create(
+      const vertexA = vec4.create(
         this.vertices[index0 + 0],
         this.vertices[index0 + 1],
         this.vertices[index0 + 2],
+        1.0,
       );
 
-      const vertexB = vec3.create(
+      const vertexB = vec4.create(
         this.vertices[index1 + 0],
         this.vertices[index1 + 1],
         this.vertices[index1 + 2],
+        1.0,
       );
 
-      const vertexC = vec3.create(
+      const vertexC = vec4.create(
         this.vertices[index2 + 0],
         this.vertices[index2 + 1],
         this.vertices[index2 + 2],
+        1.0,
       );
 
-      const v1 = vec3.subtract(vertexA, vertexB);
-      const v2 = vec3.subtract(vertexC, vertexB);
-
-      const normal = vec3.normalize(vec3.cross(v2, v1));
-
       verts = verts.concat([
-        vertexA[0], vertexA[1], vertexA[2], 1.0,
-        vertexB[0], vertexB[1], vertexB[2], 1.0,
-        vertexC[0], vertexC[1], vertexC[2], 1.0,
+        ...vertexA,
+        ...vertexB,
+        ...vertexC,
       ]);
 
-      normals = normals.concat([
-        normal[0], normal[1], normal[2], 0.0,
-        normal[0], normal[1], normal[2], 0.0,
-        normal[0], normal[1], normal[2], 0.0,
-      ])
+      if (this.normals.length === 0) {
+        const v1 = vec4.subtract(vertexA, vertexB);
+        const v2 = vec4.subtract(vertexC, vertexB);
+
+        const normal = vec3.normalize(vec3.cross(v2, v1));
+
+        normals = normals.concat([
+          ...normal, 0.0,
+          ...normal, 0.0,
+          ...normal, 0.0,
+        ])
+      }
+      else {
+        const indexOffset = i * 3;
+        normals = normals.concat([
+          ...this.normals.slice(indexOffset + 0, indexOffset + 3), 0.0,
+          ...this.normals.slice(indexOffset + 3, indexOffset + 6), 0.0,
+          ...this.normals.slice(indexOffset + 6, indexOffset + 9), 0.0,
+        ])
+      }
 
       indices = indices.concat([
         i + 0, i + 1, i + 2,

@@ -87,13 +87,16 @@ canvas {
   border-radius: 4px;
 }
 
-.settings-button {
+.upper-right {
   position: absolute;
-  margin: 1rem;
-  background-color: lightgray;
-  border-radius: 4px;
   right: 0;
   top: 0;
+  margin: 1rem;
+}
+
+.settings-button {
+  background-color: lightgray;
+  border-radius: 4px;
 }
 
 .object-menu {

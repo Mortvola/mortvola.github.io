@@ -34,11 +34,11 @@ export const cylinder = (numSlices: number, radius = 1, height = 2, color?: Vec4
   {
     let i0 = i + 1;
     let i1 = (i + 1) % numSlices + 1;
-    mesh.addTriangle(v0, i1, i0);
+    mesh.addFace([v0, i1, i0]);
 
     i0 = i + numSlices * (numStacks - 2) + 1;
     i1 = (i + 1) % numSlices + numSlices * (numStacks - 2) + 1;
-    mesh.addTriangle(v1, i0, i1);
+    mesh.addFace([v1, i0, i1]);
   }
 
   // add quads per stack / slice
@@ -53,7 +53,7 @@ export const cylinder = (numSlices: number, radius = 1, height = 2, color?: Vec4
       const i1 = j0 + (i + 1) % numSlices;
       const i2 = j1 + (i + 1) % numSlices;
       const i3 = j1 + i;
-      mesh.addQuad(i0, i1, i2, i3);
+      mesh.addFace([i0, i1, i2, i3]);
     }
   }
 

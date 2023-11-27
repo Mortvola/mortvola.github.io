@@ -32,11 +32,11 @@ export const cone = (numSlices: number, height = 2, radius = 1, color?: Vec4) =>
   {
     let i0 = i + 1;
     let i1 = (i + 1) % numSlices + 1;
-    mesh.addTriangle(v0, i1, i0);
+    mesh.addFace([v0, i1, i0]);
 
     i0 = i + numSlices * (numStacks - 2) + 1;
     i1 = (i + 1) % numSlices + numSlices * (numStacks - 2) + 1;
-    mesh.addTriangle(v1, i0, i1);
+    mesh.addFace([v1, i0, i1]);
   }
 
   return mesh;

@@ -29,23 +29,23 @@ export const torus = (numSegments = 8, numFacets = 8, radius = 1, thickness = 0.
   for (let i = 0; i < numSegments - 1; i += 1) {
     const offset = i * numFacets;
     for (let j = 0; j < numFacets; j += 1) {
-      mesh.addQuad(
+      mesh.addFace([
         j + offset,
         (j + 1) % 8 + offset,
         (j + 1) % 8 + numFacets + offset,
         j + numFacets + offset,
-      );
+      ]);
     }
   }
 
   const offset = (numSegments - 1) * numFacets;
   for (let j = 0; j < numFacets; j += 1) {
-    mesh.addQuad(
+    mesh.addFace([
       j + offset,
       (j + 1) % 8 + offset,
       (j + 1) % 8, // + numFacets + offset,
       j, // + numFacets + offset,
-    );
+    ]);
   }
 
   return mesh;
