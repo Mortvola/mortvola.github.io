@@ -30,9 +30,9 @@ export const torus = (numSegments = 8, numFacets = 8, radius = 1, thickness = 0.
     for (let j = 0; j < numFacets; j += 1) {
       mesh.addFace([
         j + offset,
-        (j + 1) % 8 + offset,
-        (j + 1) % 8 + numFacets + offset,
         j + numFacets + offset,
+        (j + 1) % 8 + numFacets + offset,
+        (j + 1) % 8 + offset,
       ]);
     }
   }
@@ -41,9 +41,9 @@ export const torus = (numSegments = 8, numFacets = 8, radius = 1, thickness = 0.
   for (let j = 0; j < numFacets; j += 1) {
     mesh.addFace([
       j + offset,
-      (j + 1) % 8 + offset,
-      (j + 1) % 8, // + numFacets + offset,
       j, // + numFacets + offset,
+      (j + 1) % 8, // + numFacets + offset,
+      (j + 1) % 8 + offset,
     ]);
   }
 

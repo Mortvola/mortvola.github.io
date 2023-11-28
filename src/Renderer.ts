@@ -24,8 +24,9 @@ import DrawableInterface from './Drawables/DrawableInterface';
 import Light, { isLight } from './Drawables/LIght';
 import Transformer from './Transformer';
 import Camera from './Camera';
+import { torus } from './Drawables/shapes/torus';
 
-export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron' | 'Cylinder' | 'Cone' | 'Plane';
+export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron' | 'Cylinder' | 'Cone' | 'Plane' | 'Torus';
 
 const requestPostAnimationFrame = (task: (timestamp: number) => void) => {
   requestAnimationFrame((timestamp: number) => {
@@ -170,6 +171,10 @@ class Renderer {
       case 'Plane':
         mesh = await Mesh.create(plane(2, 2), 'lit');
         mesh.name = 'Plane';
+        break;
+      case 'Torus':
+        mesh = await Mesh.create(torus(), 'lit');
+        mesh.name = 'Torus';
         break;
       default:
         throw new Error('invalid type')
