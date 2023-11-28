@@ -1,6 +1,7 @@
 import { vec3, vec4, Vec3, Vec4 } from 'wgpu-matrix';
 import Point from "./Point";
 import { intersectTriangle } from '../Math';
+import { yieldToMain } from '../UserInterface/LoadFbx';
 
 class SurfaceMesh {
   vertices: number[] = [];
@@ -61,10 +62,13 @@ class SurfaceMesh {
     }
   }
 
-  generateBuffers() {
+  async generateBuffers() {
     let verts: number[] = [];
     let indices: number[] = [];
     let normals: number[] = [];
+
+    let yieldPolyCount = 0;
+    const yieldPolyCountMax = 500;
 
     for (let i = 0; i < this.indexes.length; i += 3) {
       const index0 = this.indexes[i + 0] * 8;
@@ -122,6 +126,13 @@ class SurfaceMesh {
       indices = indices.concat([
         i + 0, i + 1, i + 2,
       ])
+
+      yieldPolyCount += 1;
+
+      if (yieldPolyCount >= yieldPolyCountMax) {
+        await yieldToMain();
+        yieldPolyCount = 0;  
+      }
     }
 
     return {

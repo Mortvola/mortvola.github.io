@@ -7,7 +7,13 @@ import Mesh from '../Drawables/Mesh';
 import { renderer } from '../Renderer';
 import { degToRad } from '../Math';
 
-const loadGeometry = (geometry: FBXParser.FBXReaderNode) => {
+export const yieldToMain = () => {
+  return new Promise(resolve => {
+    setTimeout(resolve, 0);
+  });
+}
+
+const loadGeometry = async (geometry: FBXParser.FBXReaderNode) => {
   const vertices = geometry?.node('Vertices')?.prop(0, 'number[]') ?? [];
   const indexes = geometry?.node('PolygonVertexIndex')?.prop(0, 'number[]') ?? [];
   const normalsNode = geometry?.node('LayerElementNormal');
@@ -40,11 +46,9 @@ const loadGeometry = (geometry: FBXParser.FBXReaderNode) => {
       m.vertices.push(1);
     }
 
-    // if (mappingInformationType === 'ByPolygonVertex') {
-    //   m.normals = normals;
-    // }
-    
     let start = 0;
+    let yieldPolyCount = 0;
+    const yieldPolyCountMax = 500;
 
     for (let i = 0; i < indexes.length; i += 1) {
       if (indexes[i] < 0) {
@@ -70,6 +74,13 @@ const loadGeometry = (geometry: FBXParser.FBXReaderNode) => {
             ],
             norms,
           )
+
+          yieldPolyCount += 1;
+
+          if (yieldPolyCount >= yieldPolyCountMax) {
+            await yieldToMain();
+            yieldPolyCount = 0;  
+          }
         }
         else if (vertexCount === 4) {
           let norms: number[] | undefined = undefined;
@@ -92,6 +103,13 @@ const loadGeometry = (geometry: FBXParser.FBXReaderNode) => {
             ],
             norms,
           )
+
+          yieldPolyCount += 1;
+
+          if (yieldPolyCount >= yieldPolyCountMax) {
+            await yieldToMain();
+            yieldPolyCount = 0;  
+          }
         }
         else {
           console.log(`unsupported polygon vertex count: ${vertexCount}`)
@@ -109,11 +127,11 @@ type Result = {
   meshes: SurfaceMesh[],
 }
 
-const traverseTree = (
+const traverseTree = async (
   objectsNode: FBXParser.FBXReaderNode,
   connectionsNode: FBXParser.FBXReaderNode,
   objectId: number,
-): Result => {
+): Promise<Result> => {
   const result: Result = {
     meshes: [],
   };
@@ -128,7 +146,7 @@ const traverseTree = (
 
       for (const node of nodes) {
         if (node.fbxNode.name === 'Geometry') {
-          const mesh = loadGeometry(node);
+          const mesh = await loadGeometry(node);
 
           if (mesh) {
             result.meshes.push(mesh);
@@ -138,35 +156,37 @@ const traverseTree = (
         const objectId = node.prop(0, 'number');
     
         if (objectId) {
-          const result2 = traverseTree(objectsNode, connectionsNode, connectedObjectId);
+          const result2 = await traverseTree(objectsNode, connectionsNode, connectedObjectId);
 
           if (node.fbxNode.name === 'Model') {
-            const [scaling] = node.node('Properties70')?.nodes({ 0: "Lcl Scaling" }) ?? [];
-            const [trans] = node.node('Properties70')?.nodes({ 0: "Lcl Translation"}) ?? [];
-            const [rot] = node.node('Properties70')?.nodes({ 0: "Lcl Rotation"}) ?? [];
+            if (result2.meshes) {
+              const [scaling] = node.node('Properties70')?.nodes({ 0: "Lcl Scaling" }) ?? [];
+              const [trans] = node.node('Properties70')?.nodes({ 0: "Lcl Translation"}) ?? [];
+              const [rot] = node.node('Properties70')?.nodes({ 0: "Lcl Rotation"}) ?? [];
 
-            const xScale = scaling?.prop(4, 'number') ?? 1;
-            const yScale = scaling?.prop(5, 'number') ?? 1;
-            const zScale = scaling?.prop(6, 'number') ?? 1;
+              const xScale = scaling?.prop(4, 'number') ?? 1;
+              const yScale = scaling?.prop(5, 'number') ?? 1;
+              const zScale = scaling?.prop(6, 'number') ?? 1;
 
-            const xRotation = rot?.prop(4, 'number') ?? 0;
-            const yRotation = rot?.prop(5, 'number') ?? 0;
-            const zRotation = rot?.prop(6, 'number') ?? 0;
+              const xRotation = rot?.prop(4, 'number') ?? 0;
+              const yRotation = rot?.prop(5, 'number') ?? 0;
+              const zRotation = rot?.prop(6, 'number') ?? 0;
 
-            const xTranslation = (trans?.prop(4, 'number') ?? 0) / 100;
-            const yTranslation = (trans?.prop(5, 'number') ?? 0) / 100;
-            const zTranslation = (trans?.prop(5, 'number') ?? 0) / 100;
+              const xTranslation = (trans?.prop(4, 'number') ?? 0) / 100;
+              const yTranslation = (trans?.prop(5, 'number') ?? 0) / 100;
+              const zTranslation = (trans?.prop(5, 'number') ?? 0) / 100;
 
-            for (const mesh of result2.meshes) {
-              const model = new Mesh(mesh, 'lit');
+              for (const mesh of result2.meshes) {
+                const model = await Mesh.create(mesh, 'lit');
 
-              renderer?.document.addNode(model);
+                renderer?.document.addNode(model);
 
-              renderer?.mainRenderPass.addDrawable(model);
-          
-              model.scale = vec3.create(xScale, yScale, zScale); 
-              model.setFromAngles(degToRad(xRotation), degToRad(yRotation), degToRad(zRotation));
-              model.translate = vec3.create(xTranslation, yTranslation, zTranslation); 
+                renderer?.mainRenderPass.addDrawable(model);
+            
+                model.scale = vec3.create(xScale, yScale, zScale); 
+                model.setFromAngles(degToRad(xRotation), degToRad(yRotation), degToRad(zRotation));
+                model.translate = vec3.create(xTranslation, yTranslation, zTranslation); 
+              }
             }
           }
         }
@@ -201,7 +221,7 @@ const LoadFbx: React.FC = () => {
 
             const root = new FBXParser.FBXReader(fbx);
 
-            const upAxis = root.node('GlobalSettings')?.node('Properties70')?.node('P', { 0: 'UpAxis' })?.prop(4, 'number')
+            // const upAxis = root.node('GlobalSettings')?.node('Properties70')?.node('P', { 0: 'UpAxis' })?.prop(4, 'number')
 
             const connectionsNode = root.node('Connections');
 
@@ -209,7 +229,9 @@ const LoadFbx: React.FC = () => {
               const objectsNode = root.node('Objects');
 
               if (objectsNode) {
-                traverseTree(objectsNode, connectionsNode, 0)
+                (async () => (
+                  await traverseTree(objectsNode, connectionsNode, 0)
+                ))()
               }
             }
           }

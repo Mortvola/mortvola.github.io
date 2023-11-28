@@ -23,7 +23,7 @@ class Mesh extends Drawable {
 
   indexFormat: GPUIndexFormat = "uint16";
 
-  constructor(mesh: SurfaceMesh, pipelineType: PipelineTypes) {
+  private constructor(mesh: SurfaceMesh, pipelineType: PipelineTypes, vertices: number[], normals: number[], indices: number[]) {
     super(pipelineType)
   
     if (!gpu) {
@@ -32,8 +32,6 @@ class Mesh extends Drawable {
 
     this.mesh = mesh;
     this.setColor(mesh.color);
-
-    const { vertices, normals, indices } = this.mesh.generateBuffers();
 
     this.vertexBuffer = gpu.device.createBuffer({
       size: vertices.length * Float32Array.BYTES_PER_ELEMENT,
@@ -112,6 +110,12 @@ class Mesh extends Drawable {
         { binding: 1, resource: { buffer: this.colorBuffer }},
       ],
     });
+  }
+
+  static async create(mesh: SurfaceMesh, pipelineType: PipelineTypes) {
+    const { vertices, normals, indices } = await mesh.generateBuffers();
+
+    return new Mesh(mesh, pipelineType, vertices, normals, indices);
   }
 
   setColor(color: Vec4) {

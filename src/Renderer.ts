@@ -128,63 +128,11 @@ class Renderer {
 
   onSelectCallback: ((drawable: DrawableInterface | null) => void) | null = null;
 
-  constructor(cameraPlaneDragHandle: CameraPlaneDragHandle) {
+  private constructor(dragModel: ContainerNode, cameraPlaneDragHandle: CameraPlaneDragHandle) {
     this.mainRenderPass.addDrawable(new CartesianAxes('line'));
 
-    const planeHandleDimension = 0.75;
-
-    const xColor = this.getDragColor('drag-x');
-    const yColor = this.getDragColor('drag-y');
-    const zColor = this.getDragColor('drag-z');
-    
-    const xAxisPlaneDragHandle = new Mesh(plane(planeHandleDimension, planeHandleDimension, xColor), 'drag-handles');
-    xAxisPlaneDragHandle.rotate(0, degToRad(90), 0);
-    xAxisPlaneDragHandle.translate = vec3.create(0, 2, 2);
-    xAxisPlaneDragHandle.tag = 'drag-x-axis-plane';
-
-    const xAxis = this.createAxis('x-axis', xColor);
-    xAxis.rotate(0, 0, degToRad(270));
-
-    const yAxisPlaneDragHandle = new Mesh(plane(planeHandleDimension, planeHandleDimension, yColor), 'drag-handles');
-    yAxisPlaneDragHandle.rotate(degToRad(270), 0, 0);
-    yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
-    yAxisPlaneDragHandle.tag = 'drag-y-axis-plane';
-
-    const yAxis = this.createAxis('y-axis', yColor);
-
-    const zAxisPlaneDragHandle = new Mesh(plane(planeHandleDimension, planeHandleDimension, zColor), 'drag-handles');
-    zAxisPlaneDragHandle.translate = vec3.create(2, 2, 0);
-    zAxisPlaneDragHandle.tag ='drag-z-axis-plane';
-
-    const zAxis = this.createAxis('z-axis', zColor);
-    zAxis.rotate(degToRad(90), 0, 0);
-
     this.cameraPlaneDragHandle = cameraPlaneDragHandle;
-    this.cameraPlaneDragHandle.tag = 'drag-camera-plane';
-
-    this.dragModel = new ContainerNode();
-
-    this.dragModel.addNode(xAxisPlaneDragHandle)
-    this.dragModel.addNode(yAxisPlaneDragHandle)
-    this.dragModel.addNode(zAxisPlaneDragHandle)
-    this.dragModel.addNode(xAxis);
-    this.dragModel.addNode(yAxis);
-    this.dragModel.addNode(zAxis);
-    this.dragModel.addNode(cameraPlaneDragHandle);
-
-    let t = new Mesh(torus(32, 8, 2, 0.125, xColor), 'pipeline');
-    t.rotate(0, degToRad(90), 0);
-    t.tag = 'drag-x-rotate';
-    this.dragModel.addNode(t);
-
-    t = new Mesh(torus(32, 8, 2, 0.125, zColor), 'pipeline');
-    t.tag = 'drag-z-rotate';
-    this.dragModel.addNode(t);
-
-    t = new Mesh(torus(32, 8, 2, 0.125, yColor), 'pipeline');
-    t.rotate(degToRad(90), 0, 0);
-    t.tag = 'drag-y-rotate';
-    this.dragModel.addNode(t);
+    this.dragModel = dragModel;
 
     this.dragHandlesPass.addDrawables(this.dragModel);
 
@@ -194,18 +142,74 @@ class Renderer {
     this.document.addNode(light);
   }
 
-  createAxis(tag: string, color: Vec3): ContainerNode {
+  static async createTransformer(cameraPlaneDragHandle: CameraPlaneDragHandle) {
+    const planeHandleDimension = 0.75;
+
+    const xColor = Renderer.getDragColor('drag-x');
+    const yColor = Renderer.getDragColor('drag-y');
+    const zColor = Renderer.getDragColor('drag-z');
+    
+    const xAxisPlaneDragHandle = await Mesh.create(plane(planeHandleDimension, planeHandleDimension, xColor), 'drag-handles');
+    xAxisPlaneDragHandle.rotate(0, degToRad(90), 0);
+    xAxisPlaneDragHandle.translate = vec3.create(0, 2, 2);
+    xAxisPlaneDragHandle.tag = 'drag-x-axis-plane';
+
+    const xAxis = await this.createAxis('x-axis', xColor);
+    xAxis.rotate(0, 0, degToRad(270));
+
+    const yAxisPlaneDragHandle = await Mesh.create(plane(planeHandleDimension, planeHandleDimension, yColor), 'drag-handles');
+    yAxisPlaneDragHandle.rotate(degToRad(270), 0, 0);
+    yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
+    yAxisPlaneDragHandle.tag = 'drag-y-axis-plane';
+
+    const yAxis = await Renderer.createAxis('y-axis', yColor);
+
+    const zAxisPlaneDragHandle = await Mesh.create(plane(planeHandleDimension, planeHandleDimension, zColor), 'drag-handles');
+    zAxisPlaneDragHandle.translate = vec3.create(2, 2, 0);
+    zAxisPlaneDragHandle.tag ='drag-z-axis-plane';
+
+    const zAxis = await Renderer.createAxis('z-axis', zColor);
+    zAxis.rotate(degToRad(90), 0, 0);
+
+    const dragModel = new ContainerNode();
+
+    dragModel.addNode(xAxisPlaneDragHandle)
+    dragModel.addNode(yAxisPlaneDragHandle)
+    dragModel.addNode(zAxisPlaneDragHandle)
+    dragModel.addNode(xAxis);
+    dragModel.addNode(yAxis);
+    dragModel.addNode(zAxis);
+    dragModel.addNode(cameraPlaneDragHandle);
+
+    let t = await Mesh.create(torus(32, 8, 2, 0.125, xColor), 'pipeline');
+    t.rotate(0, degToRad(90), 0);
+    t.tag = 'drag-x-rotate';
+    dragModel.addNode(t);
+
+    t = await Mesh.create(torus(32, 8, 2, 0.125, zColor), 'pipeline');
+    t.tag = 'drag-z-rotate';
+    dragModel.addNode(t);
+
+    t = await Mesh.create(torus(32, 8, 2, 0.125, yColor), 'pipeline');
+    t.rotate(degToRad(90), 0, 0);
+    t.tag = 'drag-y-rotate';
+    dragModel.addNode(t);
+
+    return dragModel;
+  }
+
+  static async createAxis(tag: string, color: Vec3): Promise<ContainerNode> {
     const node = new ContainerNode();
 
-    const axisDragHandle = new Mesh(cylinder(8, 0.0625, 2.5, color), 'drag-handles');
+    const axisDragHandle = await Mesh.create(cylinder(8, 0.0625, 2.5, color), 'drag-handles');
     axisDragHandle.translate = vec3.create(0, 1.25, 0);
     axisDragHandle.tag = `drag-${tag}-scale`;
 
-    const boxHandle = new Mesh(box(0.35, 0.35, 0.35, color), 'drag-handles');
+    const boxHandle = await Mesh.create(box(0.35, 0.35, 0.35, color), 'drag-handles');
     boxHandle.translate = vec3.create(0, 2.5, 0);
     boxHandle.tag = `drag-${tag}-scale`;
 
-    const coneHandle = new Mesh(cone(8, 0.75, 0.20, color), 'drag-handles')
+    const coneHandle = await Mesh.create(cone(8, 0.75, 0.20, color), 'drag-handles')
     coneHandle.translate = vec3.create(0, 3.5, 0);
     coneHandle.tag = `drag-${tag}`;
 
@@ -219,8 +223,11 @@ class Renderer {
   static async create() {
     if (gpu) {
       const cameraPlaneDragHandle = await CameraPlaneDragHandle.make(0.02, 'billboard');
+      cameraPlaneDragHandle.tag = 'drag-camera-plane';
 
-      return new Renderer(cameraPlaneDragHandle)  
+      const transformer = await Renderer.createTransformer(cameraPlaneDragHandle);
+
+      return new Renderer(transformer, cameraPlaneDragHandle)  
     }
 
     return null;
@@ -263,23 +270,23 @@ class Renderer {
     this.selected.addItem(node);
   }
 
-  addObject(type: ObjectTypes) {
+  async addObject(type: ObjectTypes) {
     let mesh: Mesh;
     switch (type) {
       case 'Box':
-        mesh = new Mesh(box(2, 2, 2), 'lit');
+        mesh = await Mesh.create(box(2, 2, 2), 'lit');
         break;
       case 'UVSphere':
-        mesh = new Mesh(uvSphere(8, 8), 'lit');
+        mesh = await Mesh.create(uvSphere(8, 8), 'lit');
         break;
       case 'Tetrahedron':
-        mesh = new Mesh(tetrahedron(), 'lit');
+        mesh = await Mesh.create(tetrahedron(), 'lit');
         break;
       case 'Cylinder':
-        mesh = new Mesh(cylinder(8), 'lit');
+        mesh = await Mesh.create(cylinder(8), 'lit');
         break;
       case 'Cone':
-        mesh = new Mesh(cone(8), 'lit');
+        mesh = await Mesh.create(cone(8), 'lit');
         break;
       default:
         throw new Error('invalid type')
@@ -835,7 +842,7 @@ class Renderer {
 
   prevHover: DrawableInterface | null = null;
 
-  getDragColor(name: string): Vec4 {
+  static getDragColor(name: string): Vec4 {
     if (/^drag-x/.test(name)) {
       return vec4.create(0.75, 0, 0, 1);
     }
@@ -852,7 +859,7 @@ class Renderer {
     return vec4.create(0, 0, 0, 1);
   }
 
-  getDragHoverColor(name: string): Vec4 {
+  static getDragHoverColor(name: string): Vec4 {
     if (/^drag-x/.test(name)) {
       return vec4.create(1, 0, 0, 1);
     }
@@ -878,15 +885,15 @@ class Renderer {
 
       if (best && (best.drawable.tag ?? '') !== '') {
         if (this.prevHover) {
-          this.prevHover.setColor(this.getDragColor(this.prevHover.tag));
+          this.prevHover.setColor(Renderer.getDragColor(this.prevHover.tag));
         }
 
         this.prevHover = best.drawable;
 
-        best.drawable.setColor(this.getDragHoverColor(this.prevHover.tag));
+        best.drawable.setColor(Renderer.getDragHoverColor(this.prevHover.tag));
       }
       else if (this.prevHover) {
-        this.prevHover.setColor(this.getDragColor(this.prevHover.tag));
+        this.prevHover.setColor(Renderer.getDragColor(this.prevHover.tag));
         this.prevHover = null;
       }
     }
