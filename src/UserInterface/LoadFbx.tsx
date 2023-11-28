@@ -13,14 +13,17 @@ export const yieldToMain = () => {
   });
 }
 
-const loadGeometry = async (geometry: FBXParser.FBXReaderNode): Promise<SurfaceMesh | undefined> => {
+const loadGeometry = async (
+  geometry: FBXParser.FBXReaderNode,
+  geoPctComplete: (pct: number) => void,
+): Promise<SurfaceMesh | undefined> => {
   const vertices = geometry?.node('Vertices')?.prop(0, 'number[]') ?? [];
   const indexes = geometry?.node('PolygonVertexIndex')?.prop(0, 'number[]') ?? [];
   const normalsNode = geometry?.node('LayerElementNormal');
 
   const normals = normalsNode
     ?.node('Normals')
-    ?.fbxNode.props[0] as number[] ?? []; // ?.prop(0, 'number');
+    ?.prop(0, 'number[]') ?? [];
 
   const mappingInformationType = normalsNode
     ?.node('MappingInformationType')
@@ -32,13 +35,6 @@ const loadGeometry = async (geometry: FBXParser.FBXReaderNode): Promise<SurfaceM
 
   if (vertices.length !== 0 && indexes.length !== 0) {
     const m = new SurfaceMesh();
-
-    // for (let i = 0; i < vertices.length; i += 3) {
-    //   m.vertices.push(vertices[i + 0] / 100)
-    //   m.vertices.push(vertices[i + 1] / 100)
-    //   m.vertices.push(vertices[i + 2] / 100)
-    //   m.vertices.push(1)
-    // }
 
     let start = 0;
     let yieldPolyCount = 0;
@@ -89,6 +85,8 @@ const loadGeometry = async (geometry: FBXParser.FBXReaderNode): Promise<SurfaceM
           yieldPolyCount += 1;
 
           if (yieldPolyCount >= yieldPolyCountMax) {
+            geoPctComplete(i / indexes.length);
+
             await yieldToMain();
             yieldPolyCount = 0;  
           }
@@ -142,8 +140,10 @@ const loadGeometry = async (geometry: FBXParser.FBXReaderNode): Promise<SurfaceM
           yieldPolyCount += 1;
 
           if (yieldPolyCount >= yieldPolyCountMax) {
+            geoPctComplete(i / indexes.length);
+
             await yieldToMain();
-            yieldPolyCount = 0;  
+            yieldPolyCount = 0;
           }
         }
         else {
@@ -162,26 +162,49 @@ type Result = {
   meshes: Mesh[],
 }
 
+type Context = {
+  totalOOConnections: number,
+  connectionsProcessedCount: number,
+  connectionsProcessed: [string, number, number, string][],
+}
+
+let yieldIterations = 0;
+
 const traverseTree = async (
+  context: Context,
   objectsNode: FBXParser.FBXReaderNode,
   connectionsNode: FBXParser.FBXReaderNode,
   objectId: number,
+  setPercentComplete: (pct: number) => void,
+  geoPctComplete: (pct: number | null) => void,
 ): Promise<Result> => {
   const result: Result = {
     meshes: [],
   };
 
-  const connections = connectionsNode?.nodes({ 0: "OO", 2: objectId }) ?? [];
+  const connections = connectionsNode?.nodes({ 2: objectId }) ?? [];
 
   for (let connection of connections) {
     const connectedObjectId = connection.prop(1, 'number');
+    const type = connection.prop(3, 'string') ?? '';
+    const c = connection.prop(0, 'string') ?? '';
+
+    const processed = context.connectionsProcessed.find(
+      (p) => p[0] === c && p[1] === connectedObjectId && p[2] === objectId && p[3] === type
+    );
+
+    if (processed) {
+      continue;
+    }
 
     if (connectedObjectId) {
       const nodes = objectsNode?.nodes({ 0: connectedObjectId }) ?? [];
 
-      for (const node of nodes) {
+      const node = nodes[0];
+
+      if (node) {
         if (node.fbxNode.name === 'Geometry') {
-          const geometry = await loadGeometry(node);
+          const geometry = await loadGeometry(node, geoPctComplete);
 
           if (geometry) {
             const mesh = await Mesh.create(geometry, 'lit');
@@ -190,12 +213,14 @@ const traverseTree = async (
 
             result.meshes.push(mesh);
           }
+
+          geoPctComplete(null);
         }
         
         const objectId = node.prop(0, 'number');
     
         if (objectId) {
-          const result2 = await traverseTree(objectsNode, connectionsNode, connectedObjectId);
+          const result2 = await traverseTree(context, objectsNode, connectionsNode, connectedObjectId, setPercentComplete, geoPctComplete);
 
           if (node.fbxNode.name === 'Model') {
             if (result2.meshes) {
@@ -227,7 +252,25 @@ const traverseTree = async (
             }
           }
         }
+        else {
+          console.log(`Object Id not found: ${objectId}`)
+        }
       }
+
+      context.connectionsProcessed.push([c, connectedObjectId, objectId, type])
+      context.connectionsProcessedCount += 1;  
+  
+      setPercentComplete(context.connectionsProcessedCount / context.totalOOConnections)
+    }
+    else {
+      console.log('Connected object Id not found.')
+    }
+
+    yieldIterations += 1;
+
+    if (yieldIterations > 500) {
+      await yieldToMain();
+      yieldIterations = 0;
     }
   }
 
@@ -235,6 +278,9 @@ const traverseTree = async (
 }
 
 const LoadFbx: React.FC = () => {
+  const [percentComplete, setPercentComplete] = React.useState<number | null>(null);
+  const [geoPercent, setGeoPercent] = React.useState<number | null>(null);
+
   const handleOpenFile: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
     if (event.target.files && event.target.files[0]) {
       const reader = new FileReader();
@@ -266,9 +312,69 @@ const LoadFbx: React.FC = () => {
               const objectsNode = root.node('Objects');
 
               if (objectsNode) {
-                (async () => (
-                  await traverseTree(objectsNode, connectionsNode, 0)
-                ))()
+                (async () => {
+                  type ConnectionEdge = {
+                    type: string,
+                    objectId: number,
+                    parentObjectId: number,
+                    subType: string,
+                    visited: boolean,
+                  }
+                  let edges: ConnectionEdge[] = [];
+
+                  for (const node of connectionsNode.fbxNode.nodes) {
+                    const type = node.props[0] as string;
+                    const id1 = node.props[1] as number;
+                    const id2 = node.props[2] as number;
+                    const subType = node.props[3] as string ?? '';
+
+                    const edge = edges.find((e) => e.type === type && e.objectId === id1 && e.parentObjectId === id2 && e.subType === subType)
+
+                    if (edge) {
+                      console.log(`duplicate edge: ${edge}`)
+                    }
+                    else {
+                      edges.push({ type, objectId: id1, parentObjectId: id2, subType, visited: false })
+                    }
+                  }
+
+                  const stack: number[] = [0];
+
+                  while (stack.length > 0) {
+                    const parentId = stack.pop()
+
+                    for (const edge of edges) {
+                      if (!edge.visited && edge.parentObjectId === parentId) {
+                        edge.visited = true;
+                        stack.push(edge.objectId);
+                      }
+                    }  
+                  }
+
+                  edges = edges.filter((edge) => edge.visited);
+                  
+                  const context: Context = {
+                    totalOOConnections: edges.length,
+                    connectionsProcessedCount: 0,
+                    connectionsProcessed: [],
+                  }
+                  
+                  setPercentComplete(0);
+
+                  await yieldToMain()
+
+                  await traverseTree(
+                    context,
+                    objectsNode,
+                    connectionsNode,
+                    0,
+                    (pct: number | null) => setPercentComplete(pct),
+                    (pct: number | null) => setGeoPercent(pct),
+                  );
+
+                  setPercentComplete(null);
+                  setGeoPercent(null);
+                })()
               }
             }
           }
@@ -286,7 +392,22 @@ const LoadFbx: React.FC = () => {
   };
 
   return (
-    <UploadFileButton onFileSelection={handleOpenFile} label="import" />
+    <>
+    {
+      percentComplete !== null
+        ? (
+          <div>
+            <div>Loading File: {`${(percentComplete * 100).toFixed(0)}%`}</div>
+            {
+              geoPercent !== null
+                ? <div>Loading Geometry: {`${((geoPercent ?? 0) * 100).toFixed(0)}%`}</div>
+                : null
+            }
+          </div>
+        )
+        : <UploadFileButton onFileSelection={handleOpenFile} label="import" />
+    }
+    </>
   )
 }
 
