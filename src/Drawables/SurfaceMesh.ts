@@ -2,6 +2,8 @@ import { vec3, vec4, Vec3, Vec4 } from 'wgpu-matrix';
 import { intersectTriangle } from '../Math';
 import { yieldToMain } from '../UserInterface/LoadFbx';
 
+const vertexStride = 4;
+
 class SurfaceMesh {
   vertices: number[] = [];
   indexes: number[] = [];
@@ -13,8 +15,6 @@ class SurfaceMesh {
   }
 
   addVertex(x: number, y: number, z: number): number {
-    // const c = color ?? vec3.create(point.x, point.y, point.z);
-
     this.vertices = this.vertices.concat([
       x, y, z, 1, // position
     ]);
@@ -70,9 +70,9 @@ class SurfaceMesh {
     const yieldPolyCountMax = 500;
 
     for (let i = 0; i < this.indexes.length; i += 3) {
-      const index0 = this.indexes[i + 0] * 4;
-      const index1 = this.indexes[i + 1] * 4;
-      const index2 = this.indexes[i + 2] * 4;
+      const index0 = this.indexes[i + 0] * vertexStride;
+      const index1 = this.indexes[i + 1] * vertexStride;
+      const index2 = this.indexes[i + 2] * vertexStride;
 
       const vertexA = vec4.create(
         this.vertices[index0 + 0],
@@ -143,9 +143,9 @@ class SurfaceMesh {
 
   hitTest(origin: Vec3, ray: Vec3) {
     for (let i = 0; i < this.indexes.length; i += 3) {
-      const index0 = this.indexes[i + 0] * 8;
-      const index1 = this.indexes[i + 1] * 8;
-      const index2 = this.indexes[i + 2] * 8;
+      const index0 = this.indexes[i + 0] * vertexStride;
+      const index1 = this.indexes[i + 1] * vertexStride;
+      const index2 = this.indexes[i + 2] * vertexStride;
 
       const v0 = vec3.create(
         this.vertices[index0 + 0],

@@ -33,6 +33,11 @@ const AddObjectMenu: React.FC = () => {
     setShowMenu(false);
   }
 
+  const handleAddPlaneClick = () => {
+    renderer?.addObject('Plane');
+    setShowMenu(false);
+  }
+
   return (
     <div className="add-button">
       <button type="button" onClick={handleAddClick}>+</button>
@@ -42,6 +47,7 @@ const AddObjectMenu: React.FC = () => {
         <div onClick={handleAddTetrahedronClick}>Tetrahedon</div>
         <div onClick={handleAddCylinderClick}>Cylinder</div>
         <div onClick={handleAddConeClick}>Cone</div>
+        <div onClick={handleAddPlaneClick}>Plane</div>
       </div>
     </div>
   )

@@ -26,7 +26,7 @@ import SceneNode, { rotationOrder } from './Drawables/SceneNode';
 import DrawableInterface from './Drawables/DrawableInterface';
 import Light, { isLight } from './Drawables/LIght';
 
-export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron' | 'Cylinder' | 'Cone';
+export type ObjectTypes = 'UVSphere' | 'Box' | 'Tetrahedron' | 'Cylinder' | 'Cone' | 'Plane';
 
 export type SpaceOrientationType = 'Global' | 'Local';
 
@@ -292,6 +292,10 @@ class Renderer {
       case 'Cone':
         mesh = await Mesh.create(cone(8), 'lit');
         mesh.name = 'Cone';
+        break;
+      case 'Plane':
+        mesh = await Mesh.create(plane(2, 2), 'lit');
+        mesh.name = 'Plane';
         break;
       default:
         throw new Error('invalid type')
