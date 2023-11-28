@@ -4,6 +4,8 @@ import PipelineInterface from "../Pipelines/PipelineInterface";
 interface DrawableInterface {
   uuid: string;
 
+  name: string;
+  
   render(passEncoder: GPURenderPassEncoder): void;
 
   pipeline: PipelineInterface;

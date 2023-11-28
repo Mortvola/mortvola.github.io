@@ -6,6 +6,8 @@ export const rotationOrder: quat.RotationOrder = 'xyz';
 class SceneNode {
   uuid = crypto.randomUUID() as string;
 
+  name = '';
+
   transform = mat4.identity();
 
   translate = vec3.create(0, 0, 0);

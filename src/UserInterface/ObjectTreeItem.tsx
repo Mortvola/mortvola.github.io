@@ -33,7 +33,7 @@ const ObjectTreeItem: React.FC<PropsType> = ({
           className={selected?.uuid === node.uuid ? styles.selected : ''}
           onClick={handleClick}
         >
-          mesh
+          {node.name}
         </div>
       )
   )

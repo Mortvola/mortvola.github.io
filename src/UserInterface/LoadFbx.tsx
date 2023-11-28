@@ -13,7 +13,7 @@ export const yieldToMain = () => {
   });
 }
 
-const loadGeometry = async (geometry: FBXParser.FBXReaderNode) => {
+const loadGeometry = async (geometry: FBXParser.FBXReaderNode): Promise<SurfaceMesh | undefined> => {
   const vertices = geometry?.node('Vertices')?.prop(0, 'number[]') ?? [];
   const indexes = geometry?.node('PolygonVertexIndex')?.prop(0, 'number[]') ?? [];
   const normalsNode = geometry?.node('LayerElementNormal');
@@ -159,7 +159,7 @@ const loadGeometry = async (geometry: FBXParser.FBXReaderNode) => {
 }
 
 type Result = {
-  meshes: SurfaceMesh[],
+  meshes: Mesh[],
 }
 
 const traverseTree = async (
@@ -181,9 +181,13 @@ const traverseTree = async (
 
       for (const node of nodes) {
         if (node.fbxNode.name === 'Geometry') {
-          const mesh = await loadGeometry(node);
+          const geometry = await loadGeometry(node);
 
-          if (mesh) {
+          if (geometry) {
+            const mesh = await Mesh.create(geometry, 'lit');
+            
+            mesh.name =  node.prop(1, 'string')?.split('::')[1] ?? 'Mesh';
+
             result.meshes.push(mesh);
           }
         }
@@ -212,15 +216,13 @@ const traverseTree = async (
               const zTranslation = (trans?.prop(5, 'number') ?? 0) / 100;
 
               for (const mesh of result2.meshes) {
-                const model = await Mesh.create(mesh, 'lit');
+                renderer?.document.addNode(mesh);
 
-                renderer?.document.addNode(model);
-
-                renderer?.mainRenderPass.addDrawable(model);
+                renderer?.mainRenderPass.addDrawable(mesh);
             
-                model.scale = vec3.create(xScale, yScale, zScale); 
-                model.setFromAngles(degToRad(xRotation), degToRad(yRotation), degToRad(zRotation));
-                model.translate = vec3.create(xTranslation, yTranslation, zTranslation); 
+                mesh.scale = vec3.create(xScale, yScale, zScale); 
+                mesh.setFromAngles(degToRad(xRotation), degToRad(yRotation), degToRad(zRotation));
+                mesh.translate = vec3.create(xTranslation, yTranslation, zTranslation); 
               }
             }
           }

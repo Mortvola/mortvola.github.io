@@ -275,18 +275,23 @@ class Renderer {
     switch (type) {
       case 'Box':
         mesh = await Mesh.create(box(2, 2, 2), 'lit');
+        mesh.name = 'Box';
         break;
       case 'UVSphere':
         mesh = await Mesh.create(uvSphere(8, 8), 'lit');
+        mesh.name = 'UV Sphere';
         break;
       case 'Tetrahedron':
         mesh = await Mesh.create(tetrahedron(), 'lit');
+        mesh.name = 'Tetrahedron';
         break;
       case 'Cylinder':
         mesh = await Mesh.create(cylinder(8), 'lit');
+        mesh.name = 'Cylinder';
         break;
       case 'Cone':
         mesh = await Mesh.create(cone(8), 'lit');
+        mesh.name = 'Cone';
         break;
       default:
         throw new Error('invalid type')
