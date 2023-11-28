@@ -1,18 +1,18 @@
 import React from 'react';
 import './App.scss';
-import { gpu, renderer, ProjectionType, SpaceOrientationType } from '../Renderer';
+import { gpu, renderer } from '../Renderer';
 import Transformations from './Transformations';
 import { StoreContext, store } from '../state/Store';
-import Drawable from '../Drawables/Drawable';
 import AddObjectMenu from './AddObjectMenu';
 import ObjectTree from './ObjectTree';
 import SceneNode from '../Drawables/SceneNode';
-import UploadFileButton from './UploadFileButton';
 import LoadFbx from './LoadFbx';
+import { SpaceOrientationType } from '../Transformer';
+import { ProjectionType } from '../Camera';
 
 const  App = () => {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
-  const [projection, setProjection] = React.useState<ProjectionType | undefined>(renderer?.projection);
+  const [projection, setProjection] = React.useState<ProjectionType | undefined>(renderer?.camera.projection);
   const [selected, setSelected] = React.useState<SceneNode | null>(null);
 
   const handleSelect = React.useCallback((node: SceneNode | null) => {
@@ -108,35 +108,35 @@ const  App = () => {
 
   const handleWheel: React.WheelEventHandler<HTMLCanvasElement> = (event) => {
     if (event.ctrlKey) {
-      renderer?.changeCameraPos(0, event.deltaY * 0.01);
+      renderer?.camera.changePosition(0, event.deltaY * 0.01);
     }
     else {
-      renderer?.changeCameraRotation(event.deltaX * 0.2, event.deltaY * 0.2)
+      renderer?.camera.changeRotation(event.deltaX * 0.2, event.deltaY * 0.2)
     }
 
     event.stopPropagation();
   }
 
   const handleProjectionClick = () => {
-    switch (renderer?.projection) {
+    switch (renderer?.camera.projection) {
       case 'Perspective':
-        renderer.projection = 'Orthographic';
+        renderer.camera.projection = 'Orthographic';
         break;
       case 'Orthographic':
-        renderer.projection = 'Perspective';
+        renderer.camera.projection = 'Perspective';
         break;
     }
 
-    setProjection(renderer?.projection)
+    setProjection(renderer?.camera.projection)
   }
 
-  const [spaceSelection, setSpaceSelection] = React.useState<SpaceOrientationType>(renderer?.spaceOrientation ?? 'Global');
+  const [spaceSelection, setSpaceSelection] = React.useState<SpaceOrientationType>(renderer?.transformer.spaceOrientation ?? 'Global');
 
   const handleSpaceSelection: React.ChangeEventHandler<HTMLSelectElement> = (event) => {
     setSpaceSelection(event.target.value as SpaceOrientationType);
 
     if (renderer) {
-      renderer.spaceOrientation = event.target.value as SpaceOrientationType;
+      renderer.transformer.spaceOrientation = event.target.value as SpaceOrientationType;
     }
   }
 
