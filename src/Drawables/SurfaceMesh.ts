@@ -1,5 +1,4 @@
 import { vec3, vec4, Vec3, Vec4 } from 'wgpu-matrix';
-import Point from "./Point";
 import { intersectTriangle } from '../Math';
 import { yieldToMain } from '../UserInterface/LoadFbx';
 
@@ -13,14 +12,14 @@ class SurfaceMesh {
     this.color = color ?? vec4.create(0.8, 0.8, 0.8, 1.0);
   }
 
-  addVertex(point: Point, color?: Vec3): number {
-    const c = color ?? vec3.create(point.x, point.y, point.z);
+  addVertex(x: number, y: number, z: number): number {
+    // const c = color ?? vec3.create(point.x, point.y, point.z);
 
     this.vertices = this.vertices.concat([
-      point.x, point.y, point.z, 1, // position
-      c[0], c[1], c[2], 1, // color
+      x, y, z, 1, // position
     ]);
-    return (this.vertices.length / 8) - 1;
+
+    return (this.vertices.length / 4) - 1;
   }
 
   addFace(vertices: number[], normals?: number[]) {
@@ -71,9 +70,9 @@ class SurfaceMesh {
     const yieldPolyCountMax = 500;
 
     for (let i = 0; i < this.indexes.length; i += 3) {
-      const index0 = this.indexes[i + 0] * 8;
-      const index1 = this.indexes[i + 1] * 8;
-      const index2 = this.indexes[i + 2] * 8;
+      const index0 = this.indexes[i + 0] * 4;
+      const index1 = this.indexes[i + 1] * 4;
+      const index2 = this.indexes[i + 2] * 4;
 
       const vertexA = vec4.create(
         this.vertices[index0 + 0],

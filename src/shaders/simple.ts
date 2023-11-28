@@ -20,8 +20,6 @@ fn vertex_simple(vert: Vertex) -> VertexOut
   var output : VertexOut;
 
   output.position = projectionMatrix * viewMatrix * modelMatrix * vert.position;
-  // output.position.x *= output.position.w;
-  // output.position.y *= output.position.w;
 
   output.color = color;
   return output;

@@ -1,5 +1,4 @@
 import { Vec4, vec3 } from 'wgpu-matrix';
-import Point from "./Point";
 import SurfaceMesh from "./SurfaceMesh";
 
 export const torus = (numSegments = 8, numFacets = 8, radius = 1, thickness = 0.25, color?: Vec4) => {
@@ -22,7 +21,7 @@ export const torus = (numSegments = 8, numFacets = 8, radius = 1, thickness = 0.
         )
       )
 
-      mesh.addVertex(new Point(q[0], q[1], q[2]), color);
+      mesh.addVertex(q[0], q[1], q[2]);
     }
   }
 

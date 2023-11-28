@@ -33,18 +33,12 @@ const loadGeometry = async (geometry: FBXParser.FBXReaderNode) => {
   if (vertices.length !== 0 && indexes.length !== 0) {
     const m = new SurfaceMesh();
 
-    for (let i = 0; i < vertices.length; i += 3) {
-      m.vertices.push(vertices[i + 0] / 100)
-      m.vertices.push(vertices[i + 1] / 100)
-      m.vertices.push(vertices[i + 2] / 100)
-      m.vertices.push(1)
-
-      // color
-      m.vertices.push(0.8);
-      m.vertices.push(0.8);
-      m.vertices.push(0.8);
-      m.vertices.push(1);
-    }
+    // for (let i = 0; i < vertices.length; i += 3) {
+    //   m.vertices.push(vertices[i + 0] / 100)
+    //   m.vertices.push(vertices[i + 1] / 100)
+    //   m.vertices.push(vertices[i + 2] / 100)
+    //   m.vertices.push(1)
+    // }
 
     let start = 0;
     let yieldPolyCount = 0;
@@ -55,6 +49,30 @@ const loadGeometry = async (geometry: FBXParser.FBXReaderNode) => {
         const vertexCount = i - start + 1;
 
         if (vertexCount === 3) {
+          let index = indexes[start + 0] * 3;
+
+          const v1 = m.addVertex(
+            vertices[index + 0] / 100,
+            vertices[index + 1] / 100,
+            vertices[index + 2] / 100,
+          )
+
+          index = indexes[start + 1] * 3;
+
+          const v2 = m.addVertex(
+            vertices[index + 0] / 100,
+            vertices[index + 1] / 100,
+            vertices[index + 2] / 100,
+          )
+
+          index = (-indexes[start + 2] - 1) * 3;
+
+          const v3 = m.addVertex(
+            vertices[index + 0] / 100,
+            vertices[index + 1] / 100,
+            vertices[index + 2] / 100,
+          )
+
           let norms: number[] | undefined = undefined;
 
           if 
@@ -66,14 +84,7 @@ const loadGeometry = async (geometry: FBXParser.FBXReaderNode) => {
             ]
           }
 
-          m.addFace(
-            [
-              indexes[start + 0],
-              indexes[start + 1],
-              -indexes[start + 2] - 1,
-            ],
-            norms,
-          )
+          m.addFace([v1, v2, v3], norms);
 
           yieldPolyCount += 1;
 
@@ -83,6 +94,38 @@ const loadGeometry = async (geometry: FBXParser.FBXReaderNode) => {
           }
         }
         else if (vertexCount === 4) {
+          let index = indexes[start + 0] * 3;
+
+          const v1 = m.addVertex(
+            vertices[index + 0] / 100,
+            vertices[index + 1] / 100,
+            vertices[index + 2] / 100,
+          )
+
+          index = indexes[start + 1] * 3;
+
+          const v2 = m.addVertex(
+            vertices[index + 0] / 100,
+            vertices[index + 1] / 100,
+            vertices[index + 2] / 100,
+          )
+
+          index = indexes[start + 2] * 3;
+
+          const v3 = m.addVertex(
+            vertices[index + 0] / 100,
+            vertices[index + 1] / 100,
+            vertices[index + 2] / 100,
+          )
+
+          index = (-indexes[start + 3] - 1) * 3;
+
+          const v4 = m.addVertex(
+            vertices[index + 0] / 100,
+            vertices[index + 1] / 100,
+            vertices[index + 2] / 100,
+          )
+
           let norms: number[] | undefined = undefined;
 
           if 
@@ -94,15 +137,7 @@ const loadGeometry = async (geometry: FBXParser.FBXReaderNode) => {
             ]
           }
 
-          m.addFace(
-            [
-              indexes[start + 0],
-              indexes[start + 1],
-              indexes[start + 2],
-              -indexes[start + 3] - 1,
-            ],
-            norms,
-          )
+          m.addFace([v1, v2, v3, v4], norms)
 
           yieldPolyCount += 1;
 

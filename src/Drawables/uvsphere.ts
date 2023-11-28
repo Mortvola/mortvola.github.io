@@ -1,11 +1,10 @@
-import Point from "./Point";
 import SurfaceMesh from "./SurfaceMesh";
 
 export const uvSphere = (numSlices: number, numStacks: number) => {
   const mesh = new SurfaceMesh();
 
   // add top vertex
-  const v0 = mesh.addVertex(new Point(0, 1, 0));
+  const v0 = mesh.addVertex(0, 1, 0);
 
   // generate vertices per stack / slice
   for (let i = 0; i < numStacks - 1; i++)
@@ -18,12 +17,12 @@ export const uvSphere = (numSlices: number, numStacks: number) => {
       const y = Math.cos(phi);
       const z = Math.sin(phi) * Math.sin(theta);
 
-      mesh.addVertex(new Point(x, y, z));
+      mesh.addVertex(x, y, z);
     }
   }
 
   // add bottom vertex
-  const v1 = mesh.addVertex(new Point(0, -1, 0));
+  const v1 = mesh.addVertex(0, -1, 0);
 
   // add top / bottom triangles
   for (let i = 0; i < numSlices; ++i)

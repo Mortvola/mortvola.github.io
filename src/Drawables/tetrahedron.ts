@@ -1,5 +1,4 @@
 import { Vec4 } from 'wgpu-matrix';
-import Point from "./Point";
 import SurfaceMesh from "./SurfaceMesh";
 
 export const tetrahedron = (color?: Vec4) => {
@@ -12,10 +11,10 @@ export const tetrahedron = (color?: Vec4) => {
   const d = Math.sqrt(2.0 / 3.0);
 
   // add the 4 vertices
-  const v0 = mesh.addVertex(new Point(0, 1, 0));
-  const v2 = mesh.addVertex(new Point(-c, -a, d));
-  const v1 = mesh.addVertex(new Point(-c, -a, -d));
-  const v3 = mesh.addVertex(new Point(b, -a, 0));
+  const v0 = mesh.addVertex(0, 1, 0);
+  const v2 = mesh.addVertex(-c, -a, d);
+  const v1 = mesh.addVertex(-c, -a, -d);
+  const v3 = mesh.addVertex(b, -a, 0);
 
   // add the 4 faces
   mesh.addFace([v0, v1, v2]);

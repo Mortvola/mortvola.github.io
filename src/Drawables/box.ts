@@ -1,4 +1,3 @@
-import Point from "./Point";
 import { Vec4 } from 'wgpu-matrix';
 import SurfaceMesh from "./SurfaceMesh";
 
@@ -9,15 +8,15 @@ export const box = (width = 2, height = 2, depth = 2, color?: Vec4) => {
   const y = height / 2;
   const z = depth / 2;
 
-  mesh.addVertex(new Point(-x, y, z), color);
-  mesh.addVertex(new Point(-x, -y, z), color);
-  mesh.addVertex(new Point(x, -y, z), color);
-  mesh.addVertex(new Point(x, y, z), color);
+  mesh.addVertex(-x, y, z);
+  mesh.addVertex(-x, -y, z);
+  mesh.addVertex(x, -y, z);
+  mesh.addVertex(x, y, z);
 
-  mesh.addVertex(new Point(x, y, -z), color);
-  mesh.addVertex(new Point(x, -y, -z), color);
-  mesh.addVertex(new Point(-x, -y, -z), color);
-  mesh.addVertex(new Point(-x, y, -z), color);
+  mesh.addVertex(x, y, -z);
+  mesh.addVertex(x, -y, -z);
+  mesh.addVertex(-x, -y, -z);
+  mesh.addVertex(-x, y, -z);
 
   mesh.addFace([0, 1, 2, 3]); // front
   mesh.addFace([4, 5, 6, 7]); // back
