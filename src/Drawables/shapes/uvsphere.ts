@@ -1,4 +1,4 @@
-import SurfaceMesh from "./SurfaceMesh";
+import SurfaceMesh from "../SurfaceMesh";
 
 export const uvSphere = (numSlices: number, numStacks: number) => {
   const mesh = new SurfaceMesh();

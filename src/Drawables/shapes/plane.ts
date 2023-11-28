@@ -1,5 +1,5 @@
 import { Vec4 } from 'wgpu-matrix';
-import SurfaceMesh from "./SurfaceMesh";
+import SurfaceMesh from "../SurfaceMesh";
 
 export const plane = (width: number, height: number, color?: Vec4) => {
   const mesh = new SurfaceMesh(color);

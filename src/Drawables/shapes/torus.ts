@@ -1,5 +1,5 @@
 import { Vec4, vec3 } from 'wgpu-matrix';
-import SurfaceMesh from "./SurfaceMesh";
+import SurfaceMesh from "../SurfaceMesh";
 
 export const torus = (numSegments = 8, numFacets = 8, radius = 1, thickness = 0.25, color?: Vec4) => {
   const mesh = new SurfaceMesh(color);
