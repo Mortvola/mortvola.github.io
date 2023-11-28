@@ -79,17 +79,25 @@ canvas {
 }
 
 .add-button {
-  position: absolute;
+  position: relative;
   margin: 1rem;
   background-color: lightgray;
   color: black;
   font-weight: bold;
   border-radius: 4px;
+  width: max-content;
 }
 
 .upper-right {
   position: absolute;
   right: 0;
+  top: 0;
+  margin: 1rem;
+}
+
+.upper-left {
+  position: absolute;
+  left: 0;
   top: 0;
   margin: 1rem;
 }

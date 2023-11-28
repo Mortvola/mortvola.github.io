@@ -151,7 +151,10 @@ const  App = () => {
                 <Transformations node={selected} />
               </div>
               <div className="canvas-wrapper">
-                <AddObjectMenu />
+                <div className="upper-left">
+                  <AddObjectMenu />
+                  <LoadFbx />
+                </div>
                 <select
                   className="orientation-control"
                   onChange={handleSpaceSelection}
@@ -164,7 +167,6 @@ const  App = () => {
                   <button type="button" className="settings-button" onClick={handleProjectionClick}>
                     {projection}
                   </button>
-                  <LoadFbx />
                 </div>
                 <canvas
                   ref={canvasRef}

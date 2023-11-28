@@ -35,15 +35,15 @@ const AddObjectMenu: React.FC = () => {
 
   return (
     <div className="add-button">
-    <button type="button" onClick={handleAddClick}>+</button>
-    <div className={`object-menu ${showMenu ? 'show' : ''}`}>
-      <div onClick={handleAddSphereClick}>UV Sphere</div>
-      <div onClick={handleAddBoxClick}>Box</div>
-      <div onClick={handleAddTetrahedronClick}>Tetrahedon</div>
-      <div onClick={handleAddCylinderClick}>Cylinder</div>
-      <div onClick={handleAddConeClick}>Cone</div>
+      <button type="button" onClick={handleAddClick}>+</button>
+      <div className={`object-menu ${showMenu ? 'show' : ''}`}>
+        <div onClick={handleAddSphereClick}>UV Sphere</div>
+        <div onClick={handleAddBoxClick}>Box</div>
+        <div onClick={handleAddTetrahedronClick}>Tetrahedon</div>
+        <div onClick={handleAddCylinderClick}>Cylinder</div>
+        <div onClick={handleAddConeClick}>Cone</div>
+      </div>
     </div>
-  </div>
   )
 }
 
