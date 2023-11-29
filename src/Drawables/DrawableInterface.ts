@@ -1,11 +1,12 @@
 import { Vec4, Vec3, Mat4, Quat } from 'wgpu-matrix';
 import PipelineInterface from "../Pipelines/PipelineInterface";
+import { AllowedTransformations } from './SceneNode';
 
 interface DrawableInterface {
   uuid: string;
 
   name: string;
-  
+
   render(passEncoder: GPURenderPassEncoder): void;
 
   pipeline: PipelineInterface;
@@ -17,6 +18,8 @@ interface DrawableInterface {
   qRotate: Quat;
 
   scale: Vec3;
+
+  allowedTransformations: AllowedTransformations;
 
   tag: string;
 

@@ -1,9 +1,11 @@
 import { vec4, Vec4 } from 'wgpu-matrix';
 import { makeObservable, observable } from 'mobx';
-import SceneNode from './SceneNode';
+import SceneNode, { AllowedTransformations } from './SceneNode';
 
 class Light extends SceneNode {
   lightColor = vec4.create(1, 1, 1, 1);
+
+  allowedTransformations = AllowedTransformations.Translation;
 
   constructor() {
     super();

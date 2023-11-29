@@ -1,11 +1,10 @@
 import {
-  mat4, vec3, vec4, quat, Vec4, Mat4, setDefaultType, Quat,
+  mat4, vec3, vec4, Vec4, setDefaultType,
 } from 'wgpu-matrix';
 import BindGroups, { lightsStructure } from "./BindGroups";
 import Gpu from "./Gpu";
 import {
   degToRad,
-  normalizeDegrees,
 } from "./Math";
 import Mesh from "./Drawables/Mesh";
 import CartesianAxes from './CartesianAxes';
@@ -19,7 +18,7 @@ import { plane } from './Drawables/shapes/plane';
 import { cylinder } from './Drawables/shapes/cylinder';
 import { cone } from './Drawables/shapes/cone';
 import ContainerNode from './Drawables/ContainerNode';
-import SceneNode from './Drawables/SceneNode';
+import SceneNode, { AllowedTransformations } from './Drawables/SceneNode';
 import DrawableInterface from './Drawables/DrawableInterface';
 import Light, { isLight } from './Drawables/LIght';
 import Transformer from './Transformer';
@@ -89,8 +88,6 @@ class Renderer {
     this.mainRenderPass.addDrawable(new CartesianAxes('line'));
 
     this.transformer = transformer;
-
-    this.dragHandlesPass.addDrawables(this.transformer.transformer);
 
     const light = new Light();
     light.translate = vec3.create(-3, 3, -3);
@@ -357,6 +354,20 @@ class Renderer {
 
       this.transformer.updateTransforms(mat)
 
+      this.dragHandlesPass.pipelines = [];
+
+      if (this.selected.selection[0].node.allowedTransformations & AllowedTransformations.Translation) {
+        this.dragHandlesPass.addDrawables(this.transformer.translator);
+      }
+
+      if (this.selected.selection[0].node.allowedTransformations & AllowedTransformations.Scale) {
+        this.dragHandlesPass.addDrawables(this.transformer.scaler);
+      }
+
+      if (this.selected.selection[0].node.allowedTransformations & AllowedTransformations.Rotation) {
+        this.dragHandlesPass.addDrawables(this.transformer.rotator);
+      }
+    
       this.dragHandlesPass.render(view, this.depthTextureView!, commandEncoder);
     }
   
@@ -365,7 +376,10 @@ class Renderer {
 
   hitTest(x: number, y: number): { point: Vec4, mesh: DrawableInterface } | null {
     if (this.selected.selection.length > 0) {
-      this.transformer.hitTest(x, y, this.camera, this.selected);
+      if (this.transformer.hitTest(x, y, this.camera, this.selected)) {
+        console.log('hit')
+        return null;
+      };
     }
 
     // Check for hits against the other objects
@@ -402,7 +416,7 @@ class Renderer {
     }
     else if (this.selected.selection.length > 0) {
       const { ray, origin } = this.camera.computeHitTestRay(x, y);
-      const best = this.transformer.transformer.modelHitTest(origin, ray);
+      const best = this.transformer.modelHitTest(origin, ray);
 
       if (best && (best.drawable.tag ?? '') !== '') {
         if (this.prevHover) {

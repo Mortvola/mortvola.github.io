@@ -4,7 +4,7 @@ import Mesh from "./Drawables/Mesh";
 import CameraPlaneDragHandle from './Drawables/CameraPlaneDragHandle';
 import { closestPointsBetweenRays, degToRad, getAngle, intersectionPlane } from './Math';
 import { plane } from './Drawables/shapes/plane';
-import ContainerNode from './Drawables/ContainerNode';
+import ContainerNode, { HitTestResult } from './Drawables/ContainerNode';
 import { torus } from './Drawables/shapes/torus';
 import { cylinder } from './Drawables/shapes/cylinder';
 import { box } from './Drawables/shapes/box';
@@ -38,7 +38,11 @@ type DragInfo = {
 export type SpaceOrientationType = 'Global' | 'Local';
 
 class Transformer {
-  transformer: ContainerNode;
+  translator: ContainerNode;
+
+  rotator: ContainerNode;
+
+  scaler: ContainerNode;
 
   cameraPlaneDragHandle: CameraPlaneDragHandle;
 
@@ -46,8 +50,15 @@ class Transformer {
 
   spaceOrientation: SpaceOrientationType = 'Global';
 
-  private constructor(transformer: ContainerNode, cameraPlaneDragHandle: CameraPlaneDragHandle){
-    this.transformer = transformer;
+  private constructor(
+    translator: ContainerNode,
+    scaler: ContainerNode,
+    rotator: ContainerNode,
+    cameraPlaneDragHandle: CameraPlaneDragHandle,
+  ){
+    this.translator = translator;
+    this.scaler = scaler;
+    this.rotator = rotator;
 
     this.cameraPlaneDragHandle = cameraPlaneDragHandle;
   }
@@ -56,13 +67,17 @@ class Transformer {
     const cameraPlaneDragHandle = await CameraPlaneDragHandle.make(0.02, 'billboard');
     cameraPlaneDragHandle.tag = 'drag-camera-plane';
 
-    const transformer = await Transformer.createTransformer(cameraPlaneDragHandle);
+    const [translator, scaler, rotator] = await Transformer.createTransformer(cameraPlaneDragHandle);
 
-    return new Transformer(transformer, cameraPlaneDragHandle);
+    return new Transformer(translator, scaler, rotator, cameraPlaneDragHandle);
   }
 
   static async createTransformer(cameraPlaneDragHandle: CameraPlaneDragHandle) {
     const planeHandleDimension = 0.75;
+
+    const translator = new ContainerNode();
+    const rotator = new ContainerNode();
+    const scaler = new ContainerNode();
 
     const xColor = Transformer.getDragColor('drag-x');
     const yColor = Transformer.getDragColor('drag-y');
@@ -73,70 +88,78 @@ class Transformer {
     xAxisPlaneDragHandle.translate = vec3.create(0, 2, 2);
     xAxisPlaneDragHandle.tag = 'drag-x-axis-plane';
 
-    const xAxis = await this.createAxis('x-axis', xColor);
-    xAxis.rotate(0, 0, degToRad(270));
+    let [axis, scale, trans] = await this.createAxis('x-axis', xColor);
+    axis.translate = vec3.create(1.25, 0, 0);
+    scale.translate = vec3.create(2.5, 0, 0);
+    trans.translate = vec3.create(3.5, 0, 0);
+    axis.rotate(0, 0, degToRad(270));
+    scale.rotate(0, 0, degToRad(270));
+    trans.rotate(0, 0, degToRad(270));
+    translator.addNode(axis);
+    translator.addNode(trans);
+    scaler.addNode(scale);
 
     const yAxisPlaneDragHandle = await Mesh.create(plane(planeHandleDimension, planeHandleDimension, yColor), 'drag-handles');
     yAxisPlaneDragHandle.rotate(degToRad(270), 0, 0);
     yAxisPlaneDragHandle.translate = vec3.create(2, 0, 2);
     yAxisPlaneDragHandle.tag = 'drag-y-axis-plane';
 
-    const yAxis = await Transformer.createAxis('y-axis', yColor);
+    [axis, scale, trans] = await Transformer.createAxis('y-axis', yColor);
+    axis.translate = vec3.create(0, 1.25, 0);
+    scale.translate = vec3.create(0, 2.5, 0);
+    trans.translate = vec3.create(0, 3.5, 0);
+    translator.addNode(axis);
+    translator.addNode(trans);
+    scaler.addNode(scale);
 
     const zAxisPlaneDragHandle = await Mesh.create(plane(planeHandleDimension, planeHandleDimension, zColor), 'drag-handles');
     zAxisPlaneDragHandle.translate = vec3.create(2, 2, 0);
     zAxisPlaneDragHandle.tag ='drag-z-axis-plane';
 
-    const zAxis = await Transformer.createAxis('z-axis', zColor);
-    zAxis.rotate(degToRad(90), 0, 0);
+    [axis, scale, trans] = await Transformer.createAxis('z-axis', zColor);
+    axis.translate = vec3.create(0, 0, 1.25);
+    scale.translate = vec3.create(0, 0, 2.5);
+    trans.translate = vec3.create(0, 0, 3.5);
+    axis.rotate(degToRad(90), 0, 0);
+    scale.rotate(degToRad(90), 0, 0);
+    trans.rotate(degToRad(90), 0, 0);
+    translator.addNode(axis);
+    translator.addNode(trans);
+    scaler.addNode(scale);
 
-    const dragModel = new ContainerNode();
-
-    dragModel.addNode(xAxisPlaneDragHandle)
-    dragModel.addNode(yAxisPlaneDragHandle)
-    dragModel.addNode(zAxisPlaneDragHandle)
-    dragModel.addNode(xAxis);
-    dragModel.addNode(yAxis);
-    dragModel.addNode(zAxis);
-    dragModel.addNode(cameraPlaneDragHandle);
+    translator.addNode(xAxisPlaneDragHandle)
+    translator.addNode(yAxisPlaneDragHandle)
+    translator.addNode(zAxisPlaneDragHandle)
+    translator.addNode(cameraPlaneDragHandle);
 
     let t = await Mesh.create(torus(32, 8, 2, 0.125, xColor), 'pipeline');
     t.rotate(0, degToRad(90), 0);
     t.tag = 'drag-x-rotate';
-    dragModel.addNode(t);
+    rotator.addNode(t);
 
     t = await Mesh.create(torus(32, 8, 2, 0.125, zColor), 'pipeline');
     t.tag = 'drag-z-rotate';
-    dragModel.addNode(t);
+    rotator.addNode(t);
 
     t = await Mesh.create(torus(32, 8, 2, 0.125, yColor), 'pipeline');
     t.rotate(degToRad(90), 0, 0);
     t.tag = 'drag-y-rotate';
-    dragModel.addNode(t);
+    rotator.addNode(t);
 
-    return dragModel;
+    return [translator, scaler, rotator];
   }
 
-  static async createAxis(tag: string, color: Vec3): Promise<ContainerNode> {
-    const node = new ContainerNode();
-
+  static async createAxis(tag: string, color: Vec3): Promise<[Mesh, Mesh, Mesh]> {
     const axisDragHandle = await Mesh.create(cylinder(8, 0.0625, 2.5, color), 'drag-handles');
-    axisDragHandle.translate = vec3.create(0, 1.25, 0);
     axisDragHandle.tag = `drag-${tag}-scale`;
 
     const boxHandle = await Mesh.create(box(0.35, 0.35, 0.35, color), 'drag-handles');
-    boxHandle.translate = vec3.create(0, 2.5, 0);
     boxHandle.tag = `drag-${tag}-scale`;
 
     const coneHandle = await Mesh.create(cone(8, 0.75, 0.20, color), 'drag-handles')
-    coneHandle.translate = vec3.create(0, 3.5, 0);
     coneHandle.tag = `drag-${tag}`;
 
-    node.addNode(axisDragHandle);
-    node.addNode(boxHandle);
-    node.addNode(coneHandle);
-
-    return node;
+    return [axisDragHandle, boxHandle, coneHandle];
   }
 
   static getDragColor(name: string): Vec4 {
@@ -173,10 +196,12 @@ class Transformer {
   }
 
   updateTransforms(mat: Mat4) {
-    this.transformer.updateTransforms(mat)
+    this.translator.updateTransforms(mat)
+    this.scaler.updateTransforms(mat)
+    this.rotator.updateTransforms(mat)
   }
 
-  hitTest(x: number, y: number, camera: Camera, selected: SelectionList) {
+  hitTest(x: number, y: number, camera: Camera, selected: SelectionList): boolean {
     // Check for hit test of drag handle in screen space
     const p = camera.ndcToCameraSpace(x, y);
     p[3] = 0; // Convert p to a vector
@@ -204,11 +229,11 @@ class Transformer {
         }))
       }
 
-      return null;
+      return true;
     }
 
     const { ray, origin } = camera.computeHitTestRay(x, y);
-    const best = this.transformer.modelHitTest(
+    const best = this.modelHitTest(
       origin,
       ray,
       (node: DrawableInterface) => (node.tag !== 'drag-camera-plane' && node.tag !== ''),
@@ -330,9 +355,11 @@ class Transformer {
           }))
         }  
 
-        return null;
+        return true;
       }
-    }    
+    }
+
+    return false;
   }
 
   scaleObject(drawable: SceneNode, originalScale: Vec3, scale: Vec3) {
@@ -450,6 +477,24 @@ class Transformer {
         })
       }
     }
+  }
+
+  modelHitTest(origin: Vec4, ray: Vec4, filter?: (node: DrawableInterface) => boolean): HitTestResult | null {
+    let best = this.translator.modelHitTest(origin, ray, filter);
+
+    let result = this.scaler.modelHitTest(origin, ray, filter);
+
+    if (best === null || (result && result.t < best.t)) {
+      best = result;
+    }
+
+    result = this.rotator.modelHitTest(origin, ray, filter);
+
+    if (best === null || (result && result.t < best.t)) {
+      best = result;
+    }
+
+    return best;
   }
 }
 
